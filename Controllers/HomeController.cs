@@ -23,7 +23,9 @@ namespace MatchBetting.Controllers
         private readonly ILogService _logService;
         private readonly INifsApiService _nifsApiService;
 
-        private readonly string TournamentID = "59";
+        //Em er 59, VM er 56?
+        //private readonly string TournamentID = "59";
+        private readonly string TournamentID = "56";
 
 
         public HomeController(ApplicationDbContext context, ILogService logservice, INifsApiService nifsApiService)

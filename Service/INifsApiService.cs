@@ -20,7 +20,7 @@ public class NifsApiService : INifsApiService
         //adding info just to display to the view
         foreach (var gruppe in tournamentModels.Result)
         {
-            if (gruppe.yearStart == 2024)
+            if (gruppe.yearStart == 2026)
             {
                 TournamentViewModelList.Add(new TournamentViewModel(gruppe));
             }

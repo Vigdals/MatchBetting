@@ -15,94 +15,96 @@
     <div class="row">
         <!-- Left Logo Column -->
         <div class="col-md-2 text-center">
-            <img src="~/img/uefa_euro_2024_logo.svg.png" alt="UEFA EURO 2024 Logo" class="img-fluid" style="max-width: 100px; height: auto;" />
+            <img src="~/img/2026_FIFA_World_Cup_emblem.svg" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;" />
         </div>
         <!-- Table Column -->
         <div class="col-md-6">
+            Gruppespel
             @if (Model != null)
             {
                 <!-- Adjust rounds here to remove old tippings -->
-                @* @foreach (var round in rounds.Where(r => r is > 0 and < 4))
+                @foreach (var round in rounds.Where(r => r is > 0 and < 4))
                 {
                     <h3>Runde @round</h3>
                     <div class="table-responsive">
                         <table class="table table-striped table-hover table-bordered">
                             <thead>
-                                <tr>
-                                    <th>Dato</th>
-                                    <th>Heimelag</th>
-                                    <th class="center">H</th>
-                                    <th class="center">U</th>
-                                    <th class="center">B</th>
-                                    <th>Bortelag</th>
-                                </tr>
+                            <tr>
+                                <th>Dato</th>
+                                <th>Heimelag</th>
+                                <th class="center">H</th>
+                                <th class="center">U</th>
+                                <th class="center">B</th>
+                                <th>Bortelag</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                @foreach (var item in Model.Where(m => m.round == round).OrderBy(o => o.date))
+                            @foreach (var item in Model.Where(m => m.round == round).OrderBy(o => o.date))
+                            {
+                                //Debug.WriteLine($"Gruppe Value: {item.gruppe}");
+                                //In the end of the tournament some sluttspill will appear in rounds due to them also having rounds attributes
+                                if (!item.gruppe.Equals("sluttspill"))
                                 {
-                                    //Debug.WriteLine($"Gruppe Value: {item.gruppe}");
-                                    //In the end of the tournament some sluttspill will appear in rounds due to them also having rounds attributes
-                                    if (!item.gruppe.Equals("sluttspill"))
-                                    {
-                                        var active = "disabled";
-                                        if (item.date.AddHours(-2) >= now) active = "";
+                                    var active = "disabled";
+                                    if (item.date.AddHours(-2) >= now) active = "";
 
-                                        <tr>
-                                            <td>@item.date.ToString("dd.MM HH:mm")</td>
-                                            <td><img src="@item.HomeTeamLogoUrl" alt="Team Logo" width="16" height="16" id="HomeTeamLogo_@item.id">&nbsp;@item.homeTeam</td>
-                                            <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="H" @active /></td>
-                                            <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="U" @active /></td>
-                                            <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="B" @active /></td>
-                                            <td><img src="@item.AwayTeamLogoUrl" alt="Team Logo" width="16" height="16" id="AwayTeamLogo_@item.id">&nbsp;@item.awayTeam</td>
-                                        </tr>
-                                    }
-
-                                    <script>
-                                        $(function () {
-                                            $(".chb_@item.id").change(function () {
-                                                // If this checkbox is being checked, uncheck all others
-                                                if ($(this).prop('checked')) {
-
-                                                    var td = $(this).closest('td');
-                                                    if (!td.hasClass("fade-green")) {
-                                                        td.addClass("fade-green");
-
-                                                        // Remove the class after the transition to fade back to original state
-                                                        setTimeout(function () {
-                                                            td.addClass("removed");  // Add class to transition to transparent
-                                                        }, 5000); // Match the timeout with the transition duration
-                                                    }
-
-
-                                                    $(".chb_@item.id").prop('checked', false);
-                                                    $(this).prop('checked', true);
-
-                                        @if (item.date.AddHours(-2) >= now)
-                                        {
-                                            <text>UpdateStorage($(this).data("id"), this.value); </text>
-                                        }
-                                                                                        } else {
-                                                    // If this checkbox is being unchecked, just uncheck it
-                                                    $(this).prop('checked', false);
-
-                                        @if (item.date.AddHours(-2) >= now)
-                                        {
-                                            <text>RemoveStorage($(this).data("id")); </text>
-                                        }
-                                                                                        }
-
-
-                                            });
-                                        });
-                                    </script>
+                                    <tr>
+                                        <td>@item.date.ToString("dd.MM HH:mm")</td>
+                                        <td><img src="@item.HomeTeamLogoUrl" alt="Team Logo" width="16" height="16" id="HomeTeamLogo_@item.id">&nbsp;@item.homeTeam</td>
+                                        <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="H" @active/></td>
+                                        <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="U" @active/></td>
+                                        <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="B" @active/></td>
+                                        <td><img src="@item.AwayTeamLogoUrl" alt="Team Logo" width="16" height="16" id="AwayTeamLogo_@item.id">&nbsp;@item.awayTeam</td>
+                                    </tr>
                                 }
+
+                                <script>
+                                    $(function() {
+                                        $(".chb_@item.id").change(function() {
+                                            // If this checkbox is being checked, uncheck all others
+                                            if ($(this).prop('checked')) {
+
+                                                var td = $(this).closest('td');
+                                                if (!td.hasClass("fade-green")) {
+                                                    td.addClass("fade-green");
+
+                                                    // Remove the class after the transition to fade back to original state
+                                                    setTimeout(function() {
+                                                            td.addClass("removed"); // Add class to transition to transparent
+                                                        },
+                                                        5000); // Match the timeout with the transition duration
+                                                }
+
+
+                                                $(".chb_@item.id").prop('checked', false);
+                                                $(this).prop('checked', true);
+
+                                                @if (item.date.AddHours(-2) >= now)
+                                                {
+                                                    <text>UpdateStorage($(this).data("id"), this.value); </text>
+                                                }
+                                            } else {
+                                                // If this checkbox is being unchecked, just uncheck it
+                                                $(this).prop('checked', false);
+
+                                                @if (item.date.AddHours(-2) >= now)
+                                                {
+                                                    <text>RemoveStorage($(this).data("id")); </text>
+                                                }
+                                            }
+
+
+                                        });
+                                    });
+                                </script>
+                            }
                             </tbody>
                         </table>
                     </div>
-                } *@
+                }
 
-                <h3>Sluttspill</h3>
-                <div class="table-responsive">
+                @*<h3>Sluttspill</h3>
+                 <div class="table-responsive">
                     <table class="table table-striped table-hover table-bordered">
                         <thead>
                             <tr>
@@ -175,12 +177,12 @@
                             }
                         </tbody>
                     </table>
-                </div>
+                </div> *@
             }
         </div>
         <!-- Right Logo Column -->
         <div class="col-md-2 text-center">
-            <img src="~/img/uefa_euro_2024_logo.svg.png" alt="UEFA EURO 2024 Logo" class="img-fluid" style="max-width: 100px; height: auto;" />
+            <img src="~/img/2026_FIFA_World_Cup_emblem.svg" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;" />
         </div>
     </div>
     <h4>SideBet</h4>
