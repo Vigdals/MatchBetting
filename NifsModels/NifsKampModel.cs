@@ -27,7 +27,7 @@ namespace MatchBetting.NifsModels
         public DateTime lastUpdated { get; set; }
 
         public string matchLength { get; set; }
-        public int surfaceId { get; set; }
+        public int? surfaceId { get; set; }
         public string type { get; set; }
         public string uid { get; set; }
         public int id { get; set; }
@@ -88,11 +88,11 @@ namespace MatchBetting.NifsModels
 
     public class Stadium
     {
-        public string name { get; set; }
-        public string type { get; set; }
-        public string uid { get; set; }
-        public int id { get; set; }
-        public int sportId { get; set; }
+        public string? name { get; set; }
+        public string? type { get; set; }
+        public string? uid { get; set; }
+        public int? id { get; set; }
+        public int? sportId { get; set; }
     }
 
     public class MatchStream
