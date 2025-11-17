@@ -1,76 +1,170 @@
 # MatchBetting
 
-Small ASP.NET Core Razor Pages project that fetches match data from the NIFS API and provides simple user betting, side-bets and leaderboards. This repo was updated from UEFA Euro 2024 -> FIFA World Cup 2026.
+**MatchBetting** er ein ASP.NET Core MVC-applikasjon som hentar kampdata frå
+NIFS API og lar brukarar logge inn, tippe H/U/B, legge inn sidebets og sjå
+leaderboard basert på faktiske resultater.\
+Prosjektet starta som ein EM 2024-løsning og er no oppgraddert til
+**FIFA World Cup 2026**. Håpar å gjera det heilt gjenbrukbart i framtida.
 
----
+## 📦 Kjør prosjektet lokalt
 
-## Quick facts
-- Framework: .NET 8
-- C# language version: 12
-- Pattern: Razor Pages with some MVC Controllers (controllers live in `Controllers\`)
-- DB: EF Core (Identity + app models)
-- External API: NIFS (api.nifs.no)
+### 1. Klon repoet
 
----
+    git clone https://github.com/Vigdals/MatchBetting
 
-## How to run locally
+### 2. Åpne i Visual Studio 2022
 
-1. Open solution in Visual Studio 2022.
-2. Restore packages: use __Manage NuGet Packages__ or run dotnet restore.
-3. Build: __Build Solution__.
-4. Run and debug: __Start Debugging__ or __Start Without Debugging__.
-5. If DB is missing, create migrations / update DB:
-   - Open Package Manager Console and run:
-     - `__Add-Migration__ <Name>` (if you change models)
-     - `__Update-Database__`
+### 3. Opprett `appsettings.json`
 
----
+Prosjektet trenger en connection string:
 
-## Important files & responsibilities
+``` json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=MatchBetting;Trusted_Connection=True;MultipleActiveResultSets=true"
+  }
+}
+```
 
-- `Controllers\HomeController.cs`
-  - Contains the tournament ID currently used by the UI.
-  - Field: `private readonly string TournamentID = "56";`
-  - Change this ID to switch tournament feed (e.g., Euro 2024 used `59`; World Cup 2026 uses `56`).
+### 4. Migrer databasen
 
-- `Service\INifsApiService.cs`
-  - Filters the stages by `yearStart`. Current code checks for `2026`:
-    - `if (gruppe.yearStart == 2026) { ... }`
-  - Update this year when switching tournaments, or follow the refactor below to avoid manual edits.
+Åpne Package Manager Console:
 
-- `Utils\ApiCall.cs`
-  - Contains helper to call NIFS endpoints. Inspect / modify headers / timeouts here.
+``` powershell
+Update-Database
+```
 
-- `Views\Home\Index.cshtml`, other Razor Views
-  - Presentation layer for bet placement and leaderboard.
+Hvis modeller endres senere:
 
-- `appsettings.json`
-  - Place environment-specific configuration here (connection strings, rising settings).
+``` powershell
+Add-Migration <Navn>
+Update-Database
+```
 
----
+### 5. Kjør prosjektet
 
-## Where to update tournament/year (manual steps)
+Start **IIS Express** fra Visual Studio.\
+Repoet er konfigurert til HTTPS på port **44303**.
 
-If you prefer the quick manual update:
+------------------------------------------------------------------------
 
-1. Tournament ID
-   - Edit `Controllers\HomeController.cs` and change:
-     - `private readonly string TournamentID = "56";`
-   - Use `59` to point back to Euro 2024.
+## ⚽ Hvordan systemet fungerer
 
-2. Year filter
-   - Edit `Service\INifsApiService.cs` and change:
-     - `if (gruppe.yearStart == 2026) { ... }`
-   - For Euro 2024 use `2024`.
+### 1. Hente turnering og kamper
 
-Note: In this repository the values are already set for World Cup 2026:
-- `HomeController` TournamentID is `"56"`.
-- `INifsApiService` filters on `gruppe.yearStart == 2026`.
+`HomeController.Index()` gjør følgende:
 
----
+1.  Henter alle "stages" i turneringen fra NIFS\
+2.  Filtrerer på riktig år (2026)\
+3.  Henter alle kamper for hver stage\
+4.  Mapper disse til EF-modellen `Match` og lagrer/oppdaterer i
+    databasen\
+5.  Returnerer ferdige `NifsKampViewModel`-objekter til UI
 
-## Recommended small refactor (to avoid future manual edits)
+### 2. Visning og tipslegging
 
-Move tournament id and year into configuration to make future updates trivial.
+Views ligger under `Views/Home/`:
 
-Example `appsettings.json` additions:
+-   **Index** → liste av kamper + valg for H/U/B
+-   **LeaderBoard** → poeng for alle brukere
+-   **Historikk** → tidligere kamper
+-   **SideBets** → toppscorer, vinnerlag, kort m.m.
+
+### 3. Poengsystem
+
+-   1 poeng for korrekt utfall (H/B/U)
+-   0 poeng hvis feil
+-   Kan ikke tippe innen **2 timer** før kampstart
+
+Resultat bestemmes av:
+
+``` csharp
+homeScore90 > awayScore90 = H
+homeScore90 < awayScore90 = B
+else = U
+```
+
+------------------------------------------------------------------------
+
+## 🧩 Turnering & konfigurasjon
+
+Prosjektet bruker hardkodede verdier for å avgjøre hvilken turnering som
+brukes.
+
+### 1. Turnering-ID
+
+I `HomeController.cs`:
+
+``` csharp
+private readonly string TournamentID = "56";
+```
+
+-   `56` = World Cup 2026\
+-   `59` = Euro 2024
+
+### 2. Årsfilter
+
+I `NifsApiService`:
+
+``` csharp
+if (gruppe.yearStart == 2026)
+```
+
+Dette sikrer at du kun får gruppene for riktig turnering.
+
+------------------------------------------------------------------------
+
+## 🗂 Prosjektstruktur
+
+    MatchBetting/
+    │
+    ├── Controllers/
+    │   └── HomeController.cs
+    │
+    ├── Data/
+    │   └── ApplicationDbContext.cs
+    │
+    ├── Models/
+    │   ├── Match.cs
+    │   ├── MatchBetting.cs
+    │   ├── SideBet.cs
+    │   └── Log.cs
+    │
+    ├── NifsModels/
+    │   └── Modeller brukt for JSON-deserialisering av NIFS-API
+    │
+    ├── Service/
+    │   ├── INifsApiService.cs
+    │   └── NifsApiService.cs
+    │
+    ├── Utils/
+    │   ├── ApiCall.cs
+    │   └── Custom DateTime Converters
+    │
+    ├── Views/
+    │   └── Razor Views for kamper, leaderboard og sidebets
+    │
+    └── appsettings.json  (ikke inkludert i repo)
+
+------------------------------------------------------------------------
+
+
+## 🔧 Anbefalte forbedringer
+
+-   Flytte turnerings-ID og årstall til `appsettings.json`
+-   Erstatte `.Result` med `await` i hele koden (fjerner deadlocks)
+-   Lage background-job (Hangfire eller HostedService) for periodisk
+    NIFS-oppdatering
+-   Rydde gamle EM-views og gjøre layout mer modulær
+
+------------------------------------------------------------------------
+
+## 📄 Lisens
+
+MIT -- bruk koden som du vil.
+
+------------------------------------------------------------------------
+
+## 👤 Kontakt
+
+**@Vigdals** på GitHub.
