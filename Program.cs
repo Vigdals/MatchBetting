@@ -6,8 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Vel riktig connection string basert på miljø
+var connectionStringName = builder.Environment.IsDevelopment()
+    ? "DefaultConnection"
+    : "DatabaseConnection";
+
+var connectionString = builder.Configuration.GetConnectionString(connectionStringName)
+                       ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 

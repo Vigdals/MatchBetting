@@ -8,7 +8,7 @@ Prosjektet starta som ei EM 2024-løysing og er no oppgradert til
 
 ---
 
-## ⚽ Korleis systemet fungerer
+## Korleis systemet fungerer
 
 ### 1. Hente turnering og kampar
 
@@ -45,7 +45,7 @@ else = U
 
 ---
 
-## 🧩 Turnering og konfigurasjon
+## Konfig
 
 Prosjektet brukar hardkoda verdiar for å styre kva turnering som er aktiv.
 
@@ -72,16 +72,7 @@ Dette sikrar at du berre får gruppene knytte til rett turnering.
 
 ---
 
-## 🔧 Tilrådde forbetringar
-
-- Flytte turnerings-ID og årstal til `appsettings.json`  
-- Erstatte `.Result` med `await` i heile koden (hindrar deadlocks)  
-- Lage ein background-job (Hangfire eller HostedService) for periodisk  
-  NIFS-oppdatering  
-- Rydde gamle EM-views og gjere layout meir modulær  
-
-
-## 📦 Køyr prosjektet lokalt
+## Køyr prosjektet lokalt
 
 ### 1. Klon repoet
 
@@ -125,12 +116,12 @@ Repoet er konfigurert til HTTPS på port **44303**.
 
 ---
 
-## 📄 Lisens
+## Lisens
 
 MIT — bruk koden slik du vil.
 
 ---
 
-## 👤 Kontakt
+## Kontakt
 
 **@Vigdals** på GitHub.
