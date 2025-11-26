@@ -23,7 +23,7 @@ namespace MatchBetting.Controllers
         private readonly ILogService _logService;
         private readonly INifsApiService _nifsApiService;
 
-        //Em er 59, VM er 56?
+        //Em er 59, VM er 56
         //private readonly string TournamentID = "59";
         private readonly string TournamentID = "56";
 
@@ -251,8 +251,8 @@ namespace MatchBetting.Controllers
                         Result = GetResultFullTime(match.result),
                         MatchStatusId = match.matchStatusId,
                         MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId),
-                        HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/uefa_euro_2024_logo.svg.png",
-                        AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/uefa_euro_2024_logo.svg.png"
+                        HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg",
+                        AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg"
                     };
 
                     _context.Matches.Add(dbMatch);
@@ -267,8 +267,8 @@ namespace MatchBetting.Controllers
                     dbMatch.Result = GetResultFullTime(match.result);
                     dbMatch.MatchStatusId = match.matchStatusId;
                     dbMatch.MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId);
-                    dbMatch.HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/uefa_euro_2024_logo.svg.png";
-                    dbMatch.AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/uefa_euro_2024_logo.svg.png";
+                    dbMatch.HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
+                    dbMatch.AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
 
                     _context.Matches.Update(dbMatch);
                 }

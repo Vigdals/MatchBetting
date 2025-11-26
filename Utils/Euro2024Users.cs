@@ -15,7 +15,9 @@
         { "b887c8b9-2246-41a3-8563-d65f35f6864a", "Thomas Ness" },
         { "c11b0977-2633-4a9a-94fa-740d6fabddd4", "Jarle Nes" },
         { "efc86ff4-824d-464a-bf00-f0b7285f5bc4", "Endre Westgaard" },
-        { "aa19758f-479b-4105-8e4b-87d1f5bd4775", "Tone Berge" }
+        { "aa19758f-479b-4105-8e4b-87d1f5bd4775", "Tone Berge" },
+        {"8f477990-e3d8-41e4-b67e-5f3185034ec8", "Adrian H Vigdal"},
+        {"34b0c68b-9eee-4041-9b81-d303de86ec89", "Adri"}
     };
 
     public static string HentBrukernavn(string brukerId)

@@ -68,6 +68,24 @@ public class NifsApiService : INifsApiService
             throw;
         }
     }
+    // gotta iterate through teams, get player then add them to a model
+    // https://api.nifs.no/teams/963 for USA
+    public async Task<PlayerModel> FetchPlayer(int teamId)
+    {
+        // iterate through 
+        var apiEndpoint = $"https://api.nifs.no/teams/{teamId}/";
+        var jsonResult = await ApiCall.DoApiCallAsync(apiEndpoint);
+        try
+        {
+            var playerModel = JsonSerializer.Deserialize<PlayerModel>(jsonResult);
+            return playerModel;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 }
 
 public interface INifsApiService
@@ -76,4 +94,5 @@ public interface INifsApiService
     Task<List<TournamentModel.Root>> GetGruppeInfo(string apiEndpoint);
     Task<List<NifsKampModel>> GetKampInfo(int tournamentId);
     Task<NifsKampModel> FetchMatch(int matchId);
+    Task<PlayerModel> FetchPlayer(int teamId);
 }
