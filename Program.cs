@@ -25,7 +25,7 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Prod – hent frå Key Vault
+    // Prod ï¿½ hent frï¿½ Key Vault
     connectionString = builder.Configuration["db-connection-matchBetting"]
                        ?? throw new InvalidOperationException("Key Vault secret 'db-connection-matchBetting' not found.");
 }
@@ -47,7 +47,7 @@ builder.Services.AddScoped<INifsApiService, NifsApiService>();
 
 var app = builder.Build();
 
-// pipeline som før ...
+// pipeline som fï¿½r ...
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();

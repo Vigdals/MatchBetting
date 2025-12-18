@@ -2,113 +2,167 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using System.Diagnostics
 @model List<MatchBetting.ViewModels.NifsKampViewModel>?
+
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
-    var rounds = Model.Select(m => m.round).Distinct();
-    var gruppe = Model.Select(x => x.gruppe).Distinct();
+
+    // Modell kan vere null (t.d. om API feilar). Då må vi ikkje køyre .Select på null.
+    var rounds = Model?.Select(m => m.round).Distinct() ?? Enumerable.Empty<int>();
+    var gruppe = Model?.Select(x => x.gruppe).Distinct() ?? Enumerable.Empty<string>();
+
+    // Tidsone for låsing av tipping (2 timar før kampstart)
     var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
     var utcNow = DateTime.UtcNow;
     var now = TimeZoneInfo.ConvertTimeFromUtc(utcNow, osloTimeZone);
+
+    // VM-nedtelling (UTC -> klienten reknar ned i eigen lokal tid)
     var worldCupStart = new DateTime(2026, 06, 11, 02, 00, 00, DateTimeKind.Utc);
+
+    // Sidebet-deadline
+    var deadline = new DateTime(2026, 06, 10, 00, 00, 00);
+    var disabled = now > deadline ? "disabled" : "";
 }
 
-<div class="container">
-    <div class="row">
-        <!-- Left Logo Column -->
-        <div class="col-md-2 text-center">
-            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;"/>
-        </div>
+<div class="container py-3">
+    <!-- HERO / COUNTDOWN -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="p-4 p-md-5 rounded-3 border bg-light">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-md-3 text-center">
+                        <img src="~/img/2026_FIFA_World_Cup_emblem.svg"
+                             alt="VM 2026"
+                             class="img-fluid d-block mx-auto"
+                             style="max-width: 140px; height: auto; background: transparent;"/>
+                    </div>
 
-        <div class="col-md-6">
-            <div class="col text-center">
-                <h2>VM 2026 startar om</h2>
-                <div id="wc-countdown" class="fs-4 fw-bold"></div>
+                    <div class="col-12 col-md-9">
+                        <h1 class="display-6 fw-bold mb-1">VM 2026</h1>
+                        <p class="lead mb-3">Legg inn tippingane dine før fristen.</p>
+
+                        <div class="d-flex flex-wrap gap-3 align-items-end">
+                            <div>
+                                <div class="text-muted small">FRIST:</div>
+                                <div id="wc-countdown" class="fw-bold" style="font-size: 2rem; line-height: 1.1;"></div>
+                            </div>
+
+                            <div class="ms-md-auto">
+                                <span class="badge text-bg-secondary">MatchBetting</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Table Column -->
+            <div class="text-muted small mt-2">
+                Tipping blir låst 2 timar før kampstart.
+            </div>
+        </div>
+    </div>
+
+    <!-- INNHALD UNDER: legg alt i same "col-lg-10" som heroen for å unngå skeiv layout -->
+    <div class="row justify-content-center mt-3">
+        <div class="col-12 col-lg-10">
+
+            <!-- TABELL -->
             @if (Model != null)
             {
-                <!-- Adjust rounds here to remove old tippings -->
+                <!-- Juster rundar her for å fjerne gamle tippingar -->
                 @foreach (var round in rounds.Where(r => r is > 0 and < 4))
                 {
-                    <h3>Runde @round</h3>
+                    <h3 class="mt-4">Runde @round</h3>
+
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover table-bordered">
+                        <table class="table table-striped table-hover table-bordered align-middle">
                             <thead>
                             <tr>
                                 <th>Dato</th>
                                 <th>Heimelag</th>
-                                <th class="center">H</th>
-                                <th class="center">U</th>
-                                <th class="center">B</th>
+                                <th class="text-center">H</th>
+                                <th class="text-center">U</th>
+                                <th class="text-center">B</th>
                                 <th>Bortelag</th>
                             </tr>
                             </thead>
                             <tbody>
                             @foreach (var item in Model.Where(m => m.round == round).OrderBy(o => o.date))
                             {
-                                //Debug.WriteLine($"Gruppe Value: {item.gruppe}");
-                                //In the end of the tournament some sluttspill will appear in rounds due to them also having rounds attributes
+                                // Sluttspel vert handtert separat seinare
                                 if (!item.gruppe.Equals("sluttspill"))
                                 {
+                                    // Lås avkryssing 2 timar før kampstart
                                     var active = "disabled";
                                     if (item.date.AddHours(-2) >= now) active = "";
 
                                     <tr>
                                         <td>@item.date.ToString("dd.MM HH:mm")</td>
-                                        <td><img src="@item.HomeTeamLogoUrl" alt="Team Logo" width="16" height="16" id="HomeTeamLogo_@item.id">&nbsp;@item.homeTeam</td>
-                                        <td class="center">
+                                        <td>
+                                            <img src="@item.HomeTeamLogoUrl"
+                                                 alt="Team Logo"
+                                                 width="16"
+                                                 height="16"
+                                                 style="background: transparent; vertical-align: middle;"
+                                                 id="HomeTeamLogo_@item.id"/>
+                                            &nbsp;@item.homeTeam
+                                        </td>
+
+                                        <td class="text-center">
                                             <input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="H" @active/>
                                         </td>
-                                        <td class="center">
+                                        <td class="text-center">
                                             <input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="U" @active/>
                                         </td>
-                                        <td class="center">
+                                        <td class="text-center">
                                             <input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="B" @active/>
                                         </td>
-                                        <td><img src="@item.AwayTeamLogoUrl" alt="Team Logo" width="16" height="16" id="AwayTeamLogo_@item.id">&nbsp;@item.awayTeam</td>
+
+                                        <td>
+                                            <img src="@item.AwayTeamLogoUrl"
+                                                 alt="Team Logo"
+                                                 width="16"
+                                                 height="16"
+                                                 style="background: transparent; vertical-align: middle;"
+                                                 id="AwayTeamLogo_@item.id"/>
+                                            &nbsp;@item.awayTeam
+                                        </td>
                                     </tr>
                                 }
 
                                 <script>
-                                    $(function() {
-                                        $(".chb_@item.id").change(function() {
-                                            // If this checkbox is being checked, uncheck all others
-                                            if ($(this).prop('checked')) {
+                                        $(function () {
+                                            $(".chb_@item.id").change(function () {
 
-                                                var td = $(this).closest('td');
-                                                if (!td.hasClass("fade-green")) {
-                                                    td.addClass("fade-green");
+                                                // Kun éin avkryssing per kamp (H/U/B)
+                                                if ($(this).prop('checked')) {
 
-                                                    // Remove the class after the transition to fade back to original state
-                                                    setTimeout(function() {
-                                                            td.addClass("removed"); // Add class to transition to transparent
-                                                        },
-                                                        5000); // Match the timeout with the transition duration
+                                                    // Liten visuell "lagra"-feedback på cella
+                                                    var td = $(this).closest('td');
+                                                    if (!td.hasClass("fade-green")) {
+                                                        td.addClass("fade-green");
+                                                        setTimeout(function () { td.addClass("removed"); }, 5000);
+                                                    }
+
+                                                    // Uncheck alle andre for same kamp
+                                                    $(".chb_@item.id").prop('checked', false);
+                                                    $(this).prop('checked', true);
+
+                                                    @if (item.date.AddHours(-2) >= now)
+                                                    {
+                                                        <text>UpdateStorage($(this).data("id"), this.value);</text>
+                                                    }
+                                                } else {
+
+                                                    // Ved uncheck: fjern frå lagring
+                                                    $(this).prop('checked', false);
+
+                                                    @if (item.date.AddHours(-2) >= now)
+                                                    {
+                                                        <text>RemoveStorage($(this).data("id"));</text>
+                                                    }
                                                 }
-
-
-                                                $(".chb_@item.id").prop('checked', false);
-                                                $(this).prop('checked', true);
-
-                                                @if (item.date.AddHours(-2) >= now)
-                                                {
-                                                    <text>UpdateStorage($(this).data("id"), this.value); </text>
-                                                }
-                                            } else {
-                                                // If this checkbox is being unchecked, just uncheck it
-                                                $(this).prop('checked', false);
-
-                                                @if (item.date.AddHours(-2) >= now)
-                                                {
-                                                    <text>RemoveStorage($(this).data("id")); </text>
-                                                }
-                                            }
-
-
+                                            });
                                         });
-                                    });
-                                </script>
+                                    </script>
                             }
                             </tbody>
                         </table>
@@ -162,7 +216,6 @@
                                                         }, 5000); // Match the timeout with the transition duration
                                                     }
 
-
                                                     $(".chb_@item.id").prop('checked', false);
                                                     $(this).prop('checked', true);
 
@@ -179,87 +232,96 @@
                                             <text>RemoveStorage($(this).data("id")); </text>
                                         }
                                                                                                                                 }
-
-
                                             });
                                         });
                                     </script>
-
-                                }    
+                                }
                             }
                         </tbody>
                     </table>
                 </div> *@
             }
-        </div>
-        <!-- Right Logo Column -->
-        <div class="col-md-2 text-center">
-            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;"/>
-        </div>
-    </div>
+            else
+            {
+                <div class="alert alert-info mt-3">
+                    Ingen kampar å vise endå.
+                </div>
+            }
 
-    <!-- Side bets -->
-    <h4>SideBet</h4>
-    <hr/>
-    @{
-        var deadline = new DateTime(2026, 06, 10, 00, 00, 00);
-        var disabled = DateTime.Now > deadline ? "disabled" : "";
-    }
-    <div class="row">
-        <div class="col-md-4">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id"/>
-            <div class="form-group">
-                <label asp-for="Toppscorer" class="control-label">Toppscorar</label>
-                <input asp-for="Toppscorer" class="form-control input_sidebet" id="Toppscorer" @disabled/>
-                <span asp-validation-for="Toppscorer" class="text-danger"></span>
+            <!-- SIDEBET -->
+            <h4 class="mt-5">SideBet</h4>
+            <hr/>
+
+            <div class="row">
+                <div class="col-md-6 col-lg-5">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Id"/>
+
+                    <div class="form-group">
+                        <label asp-for="Toppscorer" class="control-label">Toppscorar</label>
+                        <input asp-for="Toppscorer" class="form-control input_sidebet" id="Toppscorer" @disabled/>
+                        <span asp-validation-for="Toppscorer" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="MostCards" class="control-label">Flest gule kort</label>
+                        <input asp-for="MostCards" class="form-control input_sidebet" id="Mostcards" @disabled/>
+                        <span asp-validation-for="MostCards" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="WinnerTeam" class="control-label">Vinnarlag</label>
+                        <input asp-for="WinnerTeam" class="form-control input_sidebet" id="Winnerteam" @disabled/>
+                        <span asp-validation-for="WinnerTeam" class="text-danger"></span>
+                    </div>
+
+                    <input type="hidden" name="userId" id="UserId"/>
+                    <br/>
+
+                    <div class="spinner-border" role="status" id="loadingDiv">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+
+                    <div class="form-group mt-2">
+                        @if (string.IsNullOrWhiteSpace(disabled))
+                        {
+                            <input type="submit" value="Lagre sidebet!" class="btn btn-primary" id="SideBetButton"/>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Sidebet er låst.</span>
+                        }
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="MostCards" class="control-label">Flest gule kort</label>
-                <input asp-for="MostCards" class="form-control input_sidebet" id="Mostcards" @disabled/>
-                <span asp-validation-for="MostCards" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="WinnerTeam" class="control-label">Vinnarlag</label>
-                <input asp-for="WinnerTeam" class="form-control input_sidebet" id="Winnerteam" @disabled/>
-                <span asp-validation-for="WinnerTeam" class="text-danger"></span>
-            </div>
-            <input type="hidden" name="userId" id="UserId"/>
-            <br/>
-            <div class="spinner-border" role="status" id="loadingDiv">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="form-group"></div>
-            <div class="form-group">
-                @if (string.IsNullOrWhiteSpace(disabled))
-                {
-                    <text> <input type="submit" value="Lagre sidebet!" class="btn btn-primary" id="SideBetButton"/></text>
-                }
-            </div>
+
         </div>
     </div>
 </div>
 
-
 @section Scripts {
+    <partial name="_ValidationScriptsPartial"/>
+
     <script>
+        // Global state for brukaren sine lagra tips/sidebets
         var bettings;
         var sideBettings;
+
         $(function () {
+            // Hent data ved oppstart
             GetCurrentUserBettings();
             GetCurrentUserSideBettings();
+
+            // SideBet-knappen lagrar felta
             $('#SideBetButton').click(function () {
                 UpdateSideBets();
             });
         });
 
+        // Vis loader når AJAX køyrer
         $(document)
-            .ajaxStart(function () {
-                $('#loadingDiv').show();
-            })
-            .ajaxStop(function () {
-                $('#loadingDiv').hide();
-            });
+            .ajaxStart(function () { $('#loadingDiv').show(); })
+            .ajaxStop(function () { $('#loadingDiv').hide(); });
 
         function UpdateStorage(id, value) {
             $.ajax({
@@ -267,18 +329,9 @@
                 url: "/Home/UpdateStorage",
                 data: { matchId: id, result: value }
             })
-                .done(function (result) {
-                    if (result.success) {
-                        console.log(result.message);
-                    }
-                    else console.log(result.message);
-                })
-                .always(function () {
-                    GetCurrentUserBettings();
-                });
+            .done(function (result) { console.log(result.message); })
+            .always(function () { GetCurrentUserBettings(); });
         }
-
-
 
         function UpdateSideBets() {
             $.ajax({
@@ -290,34 +343,21 @@
                     'WinnerTeam': $('#Winnerteam').val()
                 }
             })
-                .done(function (result) {
-                    if (result.success) {
-                        //legg inn popup eller toltip her?
-                        console.log(result.message);
+            .done(function (result) {
+                console.log(result.message);
 
-                        var td = $('.input_sidebet');
-                        if (!td.hasClass("fade-green")) {
-                            td.addClass("fade-green");
-
-                            // Remove the class after the transition to fade back to original state
-                            setTimeout(function () {
-                                td.addClass("removed");  // Add class to transition to transparent
-                            }, 5000); // Match the timeout with the transition duration
-                        }
-                        else if (td.hasClass("removed")) {
-                            td.removeClass("removed");
-
-                            // Remove the class after the transition to fade back to original state
-                            setTimeout(function () {
-                                td.addClass("removed");  // Add class to transition to transparent
-                            }, 5000); // Match the timeout with the transition duration
-                        }
+                if (result.success) {
+                    // Liten visuell feedback på input-felta
+                    var td = $('.input_sidebet');
+                    if (!td.hasClass("fade-green")) {
+                        td.addClass("fade-green");
+                        setTimeout(function () { td.addClass("removed"); }, 5000);
+                    } else if (td.hasClass("removed")) {
+                        td.removeClass("removed");
+                        setTimeout(function () { td.addClass("removed"); }, 5000);
                     }
-                    else console.log(result.message);
-                })
-                .always(function () {
-
-                });
+                }
+            });
         }
 
         function RemoveStorage(id) {
@@ -326,15 +366,8 @@
                 url: "/Home/RemoveStorage",
                 data: { id: id }
             })
-                .done(function (result) {
-                    if (result.success) {
-                        console.log(result.message);
-                    }
-                    else console.log(result.message);
-                })
-                .always(function () {
-                    GetCurrentUserBettings();
-                });
+            .done(function (result) { console.log(result.message); })
+            .always(function () { GetCurrentUserBettings(); });
         }
 
         function GetCurrentUserBettings() {
@@ -343,17 +376,11 @@
                 url: "/Home/GetCurrentUserBettings",
                 data: {}
             })
-                .done(function (result) {
-                    if (result.success) {
-                        console.log(result.bettings);
-                        bettings = result.bettings;
-                    }
-                    else {
-                        console.log(result.message);
-                    }
-                }).always(function () {
-                    UpdateBettingTable();
-                });
+            .done(function (result) {
+                if (result.success) bettings = result.bettings;
+                else console.log(result.message);
+            })
+            .always(function () { UpdateBettingTable(); });
         }
 
         function GetCurrentUserSideBettings() {
@@ -362,62 +389,57 @@
                 url: "/Home/GetCurrentUserSideBettings",
                 data: {}
             })
-                .done(function (result) {
-                    if (result.success) {
-                        console.log(result.sideBettings);
-                        $('#Toppscorer').val(result.sideBettings.toppscorer);
-                        $('#Winnerteam').val(result.sideBettings.winnerTeam);
-                        $('#Mostcards').val(result.sideBettings.mostCards);
-                    }
-                    else {
-                        console.log(result.message);
-                    }
-                }).always(function () {
-                    UpdateBettingTable();
-                });
+            .done(function (result) {
+                if (result.success) {
+                    $('#Toppscorer').val(result.sideBettings.toppscorer);
+                    $('#Winnerteam').val(result.sideBettings.winnerTeam);
+                    $('#Mostcards').val(result.sideBettings.mostCards);
+                } else {
+                    console.log(result.message);
+                }
+            })
+            .always(function () { UpdateBettingTable(); });
         }
 
         function UpdateBettingTable() {
+            if (!bettings) return;
+
+            // Sett avkryssingar basert på det som ligg lagra
             $.each(bettings, function (key, betting) {
-
                 var checkbox = $("input[type='checkbox'][name='cb_" + betting.matchId + "'][value='" + betting.result + "']");
-
-                // Check the checkbox if it exists
-                if (checkbox.length) {
-                    checkbox.prop('checked', true);
-                }
+                if (checkbox.length) checkbox.prop('checked', true);
             });
         }
     </script>
-    <partial name="_ValidationScriptsPartial"/>
 
+    <!-- Nedtelling til VM -->
+    <script>
+        (function () {
+            const targetDate = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ssZ")");
+            function pad(n) { return String(n).padStart(2, "0"); }
 
-}
+            function updateCountdown() {
+                const el = document.getElementById("wc-countdown");
+                if (!el) return;
 
-<!-- World Cup countdown -->
-<script>
-    (function () {
-        const targetDate = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ssZ")");
+                const now = new Date();
+                const diff = targetDate - now;
 
-        function updateCountdown() {
-            const now = new Date();
-            const diff = targetDate - now;
+                if (diff <= 0) {
+                    el.innerText = "VM ER I GANG!";
+                    return;
+                }
 
-            if (diff <= 0) {
-                document.getElementById("wc-countdown").innerText = "VM ER I GANG!";
-                return;
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                const seconds = Math.floor((diff / 1000) % 60);
+
+                el.innerText = `${days} dagar ${pad(hours)}timar ${pad(minutes)}min ${pad(seconds)}sek`;
             }
 
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((diff / (1000 * 60)) % 60);
-            const seconds = Math.floor((diff / 1000) % 60);
-
-            document.getElementById("wc-countdown").innerText =
-                `${days} dagar ${hours} timar ${minutes} min ${seconds} sek`;
-        }
-
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
-    })();
-</script>
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        })();
+    </script>
+}
