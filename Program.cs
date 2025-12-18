@@ -6,11 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var keyVaultUrlString = builder.Configuration["KeyVault:Url"] 
-                        ?? throw new InvalidOperationException("KeyVault:Url is not configured.");
-var keyVaultUrl = new Uri(keyVaultUrlString);
+if (!builder.Environment.IsDevelopment())
+{
+    var keyVaultUrlString = builder.Configuration["KeyVault:Url"]
+                            ?? throw new InvalidOperationException("KeyVault:Url is not configured.");
+    var keyVaultUrl = new Uri(keyVaultUrlString);
 
-builder.Configuration.AddAzureKeyVault(keyVaultUrl, new DefaultAzureCredential());
+    builder.Configuration.AddAzureKeyVault(keyVaultUrl, new DefaultAzureCredential());
+
+}
 
 string connectionString;
 if (builder.Environment.IsDevelopment())

@@ -6,19 +6,26 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
     var rounds = Model.Select(m => m.round).Distinct();
     var gruppe = Model.Select(x => x.gruppe).Distinct();
-    TimeZoneInfo osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+    var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
     var utcNow = DateTime.UtcNow;
     var now = TimeZoneInfo.ConvertTimeFromUtc(utcNow, osloTimeZone);
+    var worldCupStart = new DateTime(2026, 06, 11, 02, 00, 00, DateTimeKind.Utc);
 }
 
 <div class="container">
     <div class="row">
         <!-- Left Logo Column -->
         <div class="col-md-2 text-center">
-            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;" />
+            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;"/>
         </div>
-        <!-- Table Column -->
+
         <div class="col-md-6">
+            <div class="col text-center">
+                <h2>VM 2026 startar om</h2>
+                <div id="wc-countdown" class="fs-4 fw-bold"></div>
+            </div>
+
+            <!-- Table Column -->
             @if (Model != null)
             {
                 <!-- Adjust rounds here to remove old tippings -->
@@ -50,9 +57,15 @@
                                     <tr>
                                         <td>@item.date.ToString("dd.MM HH:mm")</td>
                                         <td><img src="@item.HomeTeamLogoUrl" alt="Team Logo" width="16" height="16" id="HomeTeamLogo_@item.id">&nbsp;@item.homeTeam</td>
-                                        <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="H" @active/></td>
-                                        <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="U" @active/></td>
-                                        <td class="center"><input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="B" @active/></td>
+                                        <td class="center">
+                                            <input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="H" @active/>
+                                        </td>
+                                        <td class="center">
+                                            <input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="U" @active/>
+                                        </td>
+                                        <td class="center">
+                                            <input type="checkbox" name="cb_@item.id" class="chb_@item.id" data-id="@item.id" value="B" @active/>
+                                        </td>
                                         <td><img src="@item.AwayTeamLogoUrl" alt="Team Logo" width="16" height="16" id="AwayTeamLogo_@item.id">&nbsp;@item.awayTeam</td>
                                     </tr>
                                 }
@@ -181,11 +194,13 @@
         </div>
         <!-- Right Logo Column -->
         <div class="col-md-2 text-center">
-            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;" />
+            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="2026 FIFA World Cup Emblem" class="img-fluid" style="max-width: 100px; height: auto;"/>
         </div>
     </div>
+
+    <!-- Side bets -->
     <h4>SideBet</h4>
-    <hr />
+    <hr/>
     @{
         var deadline = new DateTime(2026, 06, 10, 00, 00, 00);
         var disabled = DateTime.Now > deadline ? "disabled" : "";
@@ -193,24 +208,24 @@
     <div class="row">
         <div class="col-md-4">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Id"/>
             <div class="form-group">
                 <label asp-for="Toppscorer" class="control-label">Toppscorar</label>
-                <input asp-for="Toppscorer" class="form-control input_sidebet" id="Toppscorer" @disabled />
+                <input asp-for="Toppscorer" class="form-control input_sidebet" id="Toppscorer" @disabled/>
                 <span asp-validation-for="Toppscorer" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="MostCards" class="control-label">Flest gule kort</label>
-                <input asp-for="MostCards" class="form-control input_sidebet" id="Mostcards" @disabled />
+                <input asp-for="MostCards" class="form-control input_sidebet" id="Mostcards" @disabled/>
                 <span asp-validation-for="MostCards" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="WinnerTeam" class="control-label">Vinnarlag</label>
-                <input asp-for="WinnerTeam" class="form-control input_sidebet" id="Winnerteam" @disabled />
+                <input asp-for="WinnerTeam" class="form-control input_sidebet" id="Winnerteam" @disabled/>
                 <span asp-validation-for="WinnerTeam" class="text-danger"></span>
             </div>
-            <input type="hidden" name="userId" id="UserId" />
-            <br />
+            <input type="hidden" name="userId" id="UserId"/>
+            <br/>
             <div class="spinner-border" role="status" id="loadingDiv">
                 <span class="visually-hidden">Loading...</span>
             </div>
@@ -218,7 +233,7 @@
             <div class="form-group">
                 @if (string.IsNullOrWhiteSpace(disabled))
                 {
-                    <text> <input type="submit" value="Lagre sidebet!" class="btn btn-primary" id="SideBetButton" /></text>
+                    <text> <input type="submit" value="Lagre sidebet!" class="btn btn-primary" id="SideBetButton"/></text>
                 }
             </div>
         </div>
@@ -374,5 +389,35 @@
             });
         }
     </script>
-    <partial name="_ValidationScriptsPartial" />
+    <partial name="_ValidationScriptsPartial"/>
+
+
 }
+
+<!-- World Cup countdown -->
+<script>
+    (function () {
+        const targetDate = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ssZ")");
+
+        function updateCountdown() {
+            const now = new Date();
+            const diff = targetDate - now;
+
+            if (diff <= 0) {
+                document.getElementById("wc-countdown").innerText = "VM ER I GANG!";
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            document.getElementById("wc-countdown").innerText =
+                `${days} dagar ${hours} timar ${minutes} min ${seconds} sek`;
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    })();
+</script>
