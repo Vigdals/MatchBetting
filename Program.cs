@@ -13,19 +13,16 @@ if (!builder.Environment.IsDevelopment())
     var keyVaultUrl = new Uri(keyVaultUrlString);
 
     builder.Configuration.AddAzureKeyVault(keyVaultUrl, new DefaultAzureCredential());
-
 }
 
 string connectionString;
 if (builder.Environment.IsDevelopment())
 {
-    // Lokal DB i utvikling
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("DefaultConnection not found in appsettings.");
 }
 else
 {
-    // Prod � hent fr� Key Vault
     connectionString = builder.Configuration["db-connection-matchBetting"]
                        ?? throw new InvalidOperationException("Key Vault secret 'db-connection-matchBetting' not found.");
 }
@@ -47,7 +44,6 @@ builder.Services.AddScoped<INifsApiService, NifsApiService>();
 
 var app = builder.Build();
 
-// pipeline som f�r ...
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
