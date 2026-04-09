@@ -21,7 +21,7 @@ namespace MatchBetting.ViewModels
             this.homeTeam = match.homeTeam.name;
             this.awayTeam = match.awayTeam.name;
             this.result = match.result.homeScore90 + " - " + match.result.awayScore90;
-            this.stadium = match.stadium.name;
+            this.stadium = match.stadium?.name;
             round = match.round;
             date = match.timestamp;
             gruppe = model.gruppenamn;
@@ -35,7 +35,7 @@ namespace MatchBetting.ViewModels
             this.homeTeam = match.homeTeam.name;
             this.awayTeam = match.awayTeam.name;
             this.result = match.result.homeScore90 + " - " + match.result.awayScore90;
-            this.stadium = match.stadium.name;
+            this.stadium = match.stadium?.name;
             round = match.round;
             date = match.timestamp;
             id = match.id;

@@ -6,7 +6,6 @@
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 
-    // Modell kan vere null (t.d. om API feilar). Då må vi ikkje køyre .Select på null.
     var rounds = Model?.Select(m => m.round).Distinct() ?? Enumerable.Empty<int>();
     var gruppe = Model?.Select(x => x.gruppe).Distinct() ?? Enumerable.Empty<string>();
 
@@ -14,8 +13,6 @@
     var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
     var utcNow = DateTime.UtcNow;
     var now = TimeZoneInfo.ConvertTimeFromUtc(utcNow, osloTimeZone);
-
-    // VM-nedtelling (UTC -> klienten reknar ned i eigen lokal tid)
     var worldCupStart = new DateTime(2026, 06, 11, 02, 00, 00, DateTimeKind.Utc);
 
     // Sidebet-deadline
@@ -30,7 +27,7 @@
             <div class="p-4 p-md-5 rounded-3 border bg-light">
                 <div class="row align-items-center g-4">
                     <div class="col-12 col-md-3 text-center">
-                        <img src="~/img/2026_FIFA_World_Cup_emblem.svg"
+                        <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png"
                              alt="VM 2026"
                              class="img-fluid d-block mx-auto"
                              style="max-width: 140px; height: auto; background: transparent;"/>
@@ -47,7 +44,7 @@
                             </div>
 
                             <div class="ms-md-auto">
-                                <span class="badge text-bg-secondary">MatchBetting</span>
+                                <span class="badge text-bg-secondary">Tippekonk</span>
                             </div>
                         </div>
                     </div>
@@ -60,7 +57,7 @@
         </div>
     </div>
 
-    <!-- INNHALD UNDER: legg alt i same "col-lg-10" som heroen for å unngå skeiv layout -->
+    
     <div class="row justify-content-center mt-3">
         <div class="col-12 col-lg-10">
 
@@ -87,10 +84,9 @@
                             <tbody>
                             @foreach (var item in Model.Where(m => m.round == round).OrderBy(o => o.date))
                             {
-                                // Sluttspel vert handtert separat seinare
                                 if (!item.gruppe.Equals("sluttspill"))
                                 {
-                                    // Lås avkryssing 2 timar før kampstart
+                                    // Lås tipping 2 timar før kampstart
                                     var active = "disabled";
                                     if (item.date.AddHours(-2) >= now) active = "";
 
@@ -412,7 +408,7 @@
         }
     </script>
 
-    <!-- Nedtelling til VM -->
+    <!-- Nedtelling -->
     <script>
         (function () {
             const targetDate = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ssZ")");

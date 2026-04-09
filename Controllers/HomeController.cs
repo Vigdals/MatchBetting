@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using System.Text.Json;
 using MatchBetting.NifsModels;
 using MatchBetting.Utils;
 using MatchBetting.ViewModels;
@@ -12,8 +10,7 @@ using MatchBetting.Data;
 using MatchBetting.Models;
 using MatchBetting.Service;
 using Result = MatchBetting.NifsModels.Result;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 
 namespace MatchBetting.Controllers
 {
@@ -26,8 +23,7 @@ namespace MatchBetting.Controllers
         //Em er 59, VM er 56
         //private readonly string TournamentID = "59";
         private readonly string TournamentID = "56";
-
-
+        
         public HomeController(ApplicationDbContext context, ILogService logservice, INifsApiService nifsApiService)
         {
             _context = context;
@@ -495,33 +491,7 @@ namespace MatchBetting.Controllers
                 return new List<SideBettingViewModel>(); // Return an empty list in case of an error
             }
         }
-
-        //Old code from BTO
-        //public IActionResult GetAllUsersSideBettings(string UserId)
-        //{
-        //    try
-        //    {
-        //        // Get the logged-in user's ID
-        //        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        //        // Create a new MatchBetting entity
-
-        //        var sideBettings = _context.SideBettings.FirstOrDefault(m => m.UserId == userId);
-        //        if (sideBettings == null)
-        //        {
-        //            sideBettings = new SideBet();
-        //            sideBettings.UserId = userId;
-        //        }
-        //        var sideBet = new SideBettingViewModel(sideBettings);
-
-        //        return Json(new { Success = true, SideBettings = sideBet });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Log the exception if needed
-        //        return Json(new { Success = false, Message = $"Failed to get sidebettings. Error: {ex.Message}" });
-        //    }
-        //}
+        
         public IActionResult GetGoalsAndCardsforPlayer(string playerId)
         {
             
