@@ -78,7 +78,7 @@ namespace MatchBetting.Controllers
                 {
                     UserId = user.Id,
                     //UserName = Euro2024Users.HentBrukernavn(user.Id),
-                    UserName = user.UserName,
+                    UserName = user.FullName,
                     Score = CalculatePoints(user.Id),
                     CurrentBettings = GetCurrentUserCurrentBettings(user.Id, currentMatches)
                 }).ToList();

@@ -62,13 +62,14 @@
                 <label asp-for="Input.ConfirmPassword">Confirm Password</label>
                 <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
             </div>
-            <div class="form-floating mb-3">
-                <select asp-for="SelectedCompetitionGroupId" 
-                        asp-items="Model.CompetitionGroups" 
-                        class="form-control">
-                    <option value="">-- Vel gruppe --</option>
+            <div class="mb-3">
+                <label class="form-label text-muted" style="font-size: 14px;">Gruppe</label>
+                <select asp-for="SelectedCompetitionGroupId"
+                        asp-items="Model.CompetitionGroups"
+                        class="form-select form-select-lg">
+                    <option value="">— Vel gruppe —</option>
                 </select>
-                <label>Gruppe</label>
+                <span asp-validation-for="SelectedCompetitionGroupId" class="text-danger" style="font-size: 13px;"></span>
             </div>
             <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </form>

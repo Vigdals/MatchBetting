@@ -32,7 +32,9 @@ namespace MatchBetting.Areas.Identity.Pages.Account
         public InputModel Input { get; set; }
 
         [BindProperty]
-        public int SelectedCompetitionGroupId { get; set; }
+        [Required(ErrorMessage = "Du må velje ei gruppe, tosken.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Du må velje ei gruppe, tosken.")]
+        public int? SelectedCompetitionGroupId { get; set; }
 
         public string ReturnUrl { get; set; }
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
