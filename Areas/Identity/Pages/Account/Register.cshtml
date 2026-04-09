@@ -48,6 +48,11 @@
                 <span asp-validation-for="Input.Email" class="text-danger"></span>
             </div>
             <div class="form-floating mb-3">
+                <input asp-for="Input.FullName" class="form-control" placeholder="Ola Nordmann" />
+                <label asp-for="Input.FullName">Fullt namn</label>
+                <span asp-validation-for="Input.FullName" class="text-danger"></span>
+            </div>
+            <div class="form-floating mb-3">
                 <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
                 <label asp-for="Input.Password">Password</label>
                 <span asp-validation-for="Input.Password" class="text-danger"></span>
@@ -57,7 +62,14 @@
                 <label asp-for="Input.ConfirmPassword">Confirm Password</label>
                 <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
             </div>
-            @* LAG EIN DROP DOWN LIST HER? *@
+            <div class="form-floating mb-3">
+                <select asp-for="SelectedCompetitionGroupId" 
+                        asp-items="Model.CompetitionGroups" 
+                        class="form-control">
+                    <option value="">-- Vel gruppe --</option>
+                </select>
+                <label>Gruppe</label>
+            </div>
             <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </form>
     </div>

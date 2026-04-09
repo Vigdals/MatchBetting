@@ -1,5 +1,6 @@
 using Azure.Identity;
 using MatchBetting.Data;
+using MatchBetting.Models;
 using MatchBetting.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,6 @@ if (!builder.Environment.IsDevelopment())
     var keyVaultUrlString = builder.Configuration["KeyVault:Url"]
                             ?? throw new InvalidOperationException("KeyVault:Url is not configured.");
     var keyVaultUrl = new Uri(keyVaultUrlString);
-
     builder.Configuration.AddAzureKeyVault(keyVaultUrl, new DefaultAzureCredential());
 }
 
@@ -27,18 +27,14 @@ else
                        ?? throw new InvalidOperationException("Key Vault secret 'db-connection-matchBetting' not found.");
 }
 
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddRazorPages();
-
-// Register services
 builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<INifsApiService, NifsApiService>();
 
@@ -56,9 +52,7 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
@@ -69,5 +63,4 @@ app.UseEndpoints(endpoints =>
 });
 
 app.MapRazorPages();
-
 app.Run();
