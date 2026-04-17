@@ -385,6 +385,36 @@ namespace MatchBetting.Controllers
             return View();
         }
 
+        [Authorize]
+        public IActionResult GetMatchesForReact()
+        {
+            var tournamentViewModelList = _nifsApiService.GetTournamentInfo(TournamentID);
+            var matches = new List<object>();
+
+            foreach (var tournamentViewModel in tournamentViewModelList)
+            {
+                var matchModels = _nifsApiService.GetKampInfo(tournamentViewModel.id);
+                foreach (var match in matchModels.Result)
+                {
+                    if (match.round is <= 0 or >= 6) continue;
+                    matches.Add(new
+                    {
+                        id = match.id,
+                        round = match.round,
+                        date = match.timestamp,
+                        homeTeam = match.homeTeam.name,
+                        awayTeam = match.awayTeam.name,
+                        homeTeamLogo = match.homeTeam?.logo?.url,
+                        awayTeamLogo = match.awayTeam?.logo?.url,
+                        gruppe = tournamentViewModel.gruppenamn,
+                        lockTime = match.timestamp.AddHours(-2)
+                    });
+                }
+            }
+
+            return Json(matches);
+        }
+
         #endregion
     }
 }
