@@ -2,38 +2,79 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="container">
-    <div class="row">
-        <!-- Left Logo -->
-        <div class="col-md-2 text-center">
-            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="UEFA EURO 2024 Logo" class="img-fluid" style="max-width: 100px; height: auto;" />
-        </div>
-        <!-- Content Column -->
-        <div class="col-md-8">
-            <p>
-                Tipping på kampar må gjerast 2t før kampstart. <br>
-                Sidebets (toppscorar, flest kort og vinnarlag) må tippast på før 2t før fyrste kamp i meistarskapet.<br>
-                Ein kan endre på tippinga si til ein kvar tid før fristen går ut.<br>
-                I sluttspelfasane tippar me på resultat etter 90 min
-            </p>
-            <ul class="list-unstyled mt-3">
-                <li><strong>Poengdeling:</strong></li>
-                <li>1 poeng for rett HUB pr kamp</li>
-                <li>3 poeng for rett toppscorer</li>
-                <li>3 poeng for flest kort (gult=1, raudt =2)</li>
-                <li>3 poeng for rett vinnarlag av EM</li>
-                <li>Hentar statistikk <a href="https://www.uefa.com/euro2024/statistics/players/">herifrå</a> </li>
-                <br />
-                <li>Kvar deltakar kan få totalt 9p om ein tippar rett toppscorar, vinnarlag og mest kort. </li>
-                <li>Dersom fleire fotballspelarar har like mange scoringar eller kort får kvar deltakar 3p for korrekt tipping.</li>
-                <br />
-                <li>1000 kr innsats, vinnaren får alt. Ved lik poengsum delast potten.</li>
-                <li>Vipps Bjørn Tore Årøy 41108550</li>
-            </ul>
-        </div>
-        <!-- Right Logo -->
-        <div class="col-md-2 text-center">
-            <img src="~/img/2026_FIFA_World_Cup_emblem.svg (1).png" alt="UEFA EURO 2024 Logo" class="img-fluid" style="max-width: 100px; height: auto;" />
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+
+            <!-- HERO -->
+            <div class="p-4 p-md-5 rounded-3 border bg-light mb-4">
+                <div class="d-flex flex-column flex-md-row align-items-center gap-3 text-center text-md-start">
+
+                    <div>
+                        <img src="~/img/worldcup-2026.png"
+                             class="img-fluid"
+                             style="max-width: 90px; height: auto;" />
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-1">Reglar</h2>
+                        <p class="mb-0 text-muted">
+                            Slik fungerer tipping og poengsystemet
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TIPPING -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Tipping</h5>
+                    <ul class="mb-0">
+                        <li>Tipping på kampar må gjerast <strong>seinast 2 timar før kampstart</strong>.</li>
+                        <li>Du kan endre tips heilt fram til 2t før kampstart.</li>
+                        <li>I alle kampar tippar ein på resultat etter <strong>90 minutt</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- SIDEBETS -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Sidebets (ikkje aktivt no)</h5>
+                    <ul class="mb-0">
+                        <li>Toppscorar</li>
+                        <li>Flest kort (gult = 1, raudt = 2)</li>
+                        <li>Vinnarlag</li>
+                    </ul>
+
+                    <div class="mt-2 text-muted small">
+                        Sidebets må settast før første kamp i turneringa.
+                    </div>
+                </div>
+            </div>
+
+            <!-- POENG -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Poengsystem</h5>
+                    <ul class="mb-0">
+                        <li><strong>1 poeng</strong> for rett H/U/B per kamp</li>
+                        <li><strong>3 poeng</strong> for kvar korrekt sidebet</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- RESULTAT -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Resultat og vinnar</h5>
+                    <ul class="mb-0">
+                        <li>Den med flest poeng vinn.</li>
+                        <li>Ved lik poengsum vil premie delast eller avgjerast etter eigne reglar. Stein, saks, papir eller slåstkamp</li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

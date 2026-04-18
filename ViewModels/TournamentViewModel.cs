@@ -8,11 +8,14 @@ namespace MatchBetting.ViewModels
         public int id { get; set; }
         public int yearStart { get; set; }
 
-        public TournamentViewModel(TournamentModel.Root Grupper)
+        public int StageTypeId { get; set; } // Viktig! Seier om det er gruppespel eller sluttspel
+
+        public TournamentViewModel(TournamentModel.Root grupper)
         {
-            this.gruppenamn = Grupper.groupName;
-            this.id = Grupper.id;
-            this.yearStart = Grupper.yearStart;
+            gruppenamn = grupper.groupName;
+            id = grupper.id;
+            yearStart = grupper.yearStart;
+            StageTypeId = grupper.stageTypeId;
         }
     }
 }

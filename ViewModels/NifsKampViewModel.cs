@@ -8,7 +8,7 @@ namespace MatchBetting.ViewModels
         public string awayTeam { get; set; }
         public string result { get; set; }
         public string stadium { get; set; }
-
+        public string phase { get; set; }
         public int round { get; set; }
         public DateTime date { get; set; }
         public string gruppe { get; set; }
@@ -26,6 +26,7 @@ namespace MatchBetting.ViewModels
             date = match.timestamp;
             gruppe = model.gruppenamn;
             id = match.id;
+            phase = model.StageTypeId == 1 ? "group" : "knockout";
             HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/uefa_euro_2024_logo.svg.png";
             AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/uefa_euro_2024_logo.svg.png";
         }

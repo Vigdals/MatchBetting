@@ -32,24 +32,32 @@ namespace MatchBetting.Controllers
         #region ControllerActions
 
         [Authorize]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var TournamentViewModelList = _nifsApiService.GetTournamentInfo(TournamentID);
+            var tournamentViewModelList = _nifsApiService.GetTournamentInfo(TournamentID);
             var matchViewModelList = new List<NifsKampViewModel>();
 
-            foreach (var tournamentViewModel in TournamentViewModelList)
+            foreach (var tournamentViewModel in tournamentViewModelList)
             {
-                var matchModels = _nifsApiService.GetKampInfo(tournamentViewModel.id);
-                foreach (var match in matchModels.Result)
+                var matchModels = await _nifsApiService.GetKampInfo(tournamentViewModel.id);
+
+                foreach (var match in matchModels)
                 {
                     matchViewModelList.Add(new NifsKampViewModel(match, tournamentViewModel));
                     AddOrUpdateMatchInDatabase(match);
-                    Debug.WriteLine(tournamentViewModel.gruppenamn + match.homeTeam.name + " + " + match.awayTeam.name);
+
+                    // Debug.WriteLine($"{tournamentViewModel.gruppenamn} {match.homeTeam.name} + {match.awayTeam.name}");
                 }
             }
 
-            try { _context.SaveChangesAsync(); }
-            catch (Exception e) { Console.WriteLine(e); }
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
 
             return View(matchViewModelList);
         }
