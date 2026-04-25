@@ -6,34 +6,15 @@
 }
 
 <!-- HERO / COUNTDOWN -->
-<div class="col-12 col-lg-10">
-    <div class="p-4 p-md-5 rounded-3 border bg-light">
-        <div class="row align-items-center g-4">
-            <div class="col-12 col-md-3 text-center">
-                <img src="~/img/worldcup-2026.png"
-                     alt="VM 2026"
-                     class="img-fluid"
-                     style="max-width: 140px; height:auto;" />
-            </div>
-
-            <div class="col-12 col-md-9">
-                <h1 class="display-6 fw-bold mb-1">VM 2026</h1>
-                <p class="lead mb-3">Registrer deg og legg inn tippingane dine før fristen.</p>
-
-                <div class="d-flex flex-wrap gap-3 align-items-end">
-                    <div>
-                        <div class="text-muted small">Startar om</div>
-                        <div id="wc-countdown" class="fw-bold" style="font-size: 2rem; line-height: 1.1;"></div>
-                    </div>
-
-                    <div class="ms-md-auto">
-                        <span class="badge text-bg-secondary">MatchBetting</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="d-flex align-items-center gap-3 p-3 rounded-3 border bg-light mb-4">
+    <img src="~/img/worldcup-2026.png" alt="VM 2026" style="width: 50px; height: auto;" />
+    <div>
+        <h5 class="fw-bold mb-0">VM 2026</h5>
+        <div class="text-muted small">Startar om <span id="wc-countdown" class="fw-semibold text-dark"></span></div>
     </div>
+    <span class="badge text-bg-secondary ms-auto">Tippekonk</span>
 </div>
+
 <br />
 
 <div class="row">

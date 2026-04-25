@@ -4,98 +4,55 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Tippekonk</title>
-
     <link rel="icon" type="image/png" href="~/img/favicon.png" />
-
-    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Custom -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-
 <body class="bg-light">
-
-    <!-- NAVBAR -->
     <header class="border-bottom bg-white sticky-top">
         <div class="container-fluid px-4">
-
-            <nav class="navbar navbar-expand navbar-light py-2">
-
-                <!-- Logo / brand -->
-                <a class="navbar-brand fw-semibold" href="/Home/Index">
-                    ⚽ Tippekonk
-                </a>
-
-                <!-- Mobile toggle -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+            <nav class="navbar navbar-expand-sm navbar-light py-2">
+                <a class="navbar-brand fw-semibold" href="/Home/Index">⚽ Tippekonk</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+                        aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-
-                <!-- Nav -->
                 <div class="collapse navbar-collapse" id="nav">
-
                     <ul class="navbar-nav me-auto gap-lg-2">
-
                         <li class="nav-item">
                             <a class="nav-link" href="/Home/Index">Tipping</a>
                         </li>
-
                         <li class="nav-item">
                             <a class="nav-link" href="/Home/LeaderBoard">Leaderboard</a>
                         </li>
-
                         <li class="nav-item">
                             <a class="nav-link" href="/Home/Historikk">Historikk</a>
                         </li>
-
                         <li class="nav-item">
                             <a class="nav-link" href="/Home/Rules">Reglar</a>
                         </li>
-
                     </ul>
-
-                    <!-- Login -->
                     <div class="d-flex align-items-center">
                         <partial name="_LoginPartial" />
                     </div>
-
                 </div>
             </nav>
         </div>
     </header>
-
-    <!-- MAIN -->
     <main class="py-4">
         <div class="container">
             @RenderBody()
         </div>
     </main>
-
-    <!-- FOOTER -->
     <footer class="border-top bg-white py-3 mt-4">
         <div class="container d-flex justify-content-between small text-muted">
-
-            <div>
-                &copy; @DateTime.Now.Year Tippekonk
-            </div>
-
-            <div>
-                <a href="/Home/Rules" class="text-decoration-none text-muted">Reglar</a>
-            </div>
-
+            <div>&copy; @DateTime.Now.Year Tippekonk</div>
+            <div><a href="/Home/Rules" class="text-decoration-none text-muted">Reglar</a></div>
         </div>
     </footer>
-
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
     <script src="~/js/site.js" asp-append-version="true"></script>
-
     @await RenderSectionAsync("Scripts", required: false)
-
 </body>
 </html>
