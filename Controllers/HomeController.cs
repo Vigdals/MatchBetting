@@ -258,10 +258,11 @@ namespace MatchBetting.Controllers
         public async Task<IActionResult> UpdateStorage(int matchId, string result)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var now = GetServerDateTimeNow();
             try
             {
                 var match = _context.Matches.FirstOrDefault(m => m.MatchId == matchId);
-                if (match == null || DateTime.Now.AddHours(2) > match.Timestamp)
+                if (match == null || now.AddHours(2) > match.Timestamp)
                     throw new Exception("Cannot bet on this match when starting time is less than two hours from now");
 
                 var dbMatchBetting = _context.MatchBettings.FirstOrDefault(m => m.UserId == userId && m.MatchId == matchId);
