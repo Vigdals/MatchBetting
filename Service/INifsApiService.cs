@@ -68,8 +68,34 @@ public class NifsApiService : INifsApiService
             throw;
         }
     }
-    // gotta iterate through teams, get player then add them to a model
-    // https://api.nifs.no/teams/963 for USA
+
+    public async Task<List<string>> GetAllPlayersForTournament(string tournamentId)
+    {
+        var stages = GetTournamentInfo(tournamentId);
+        var teamIds = new HashSet<int>();
+        var playerNames = new List<string>();
+
+        foreach (var stage in stages)
+        {
+            var matches = await GetKampInfo(stage.id);
+            foreach (var match in matches)
+            {
+                teamIds.Add(match.homeTeam.id);
+                teamIds.Add(match.awayTeam.id);
+            }
+        }
+
+        foreach (var teamId in teamIds)
+        {
+            var team = await FetchPlayer(teamId);
+            var names = team?.players?.Select(p => p.name).Where(n => !string.IsNullOrEmpty(n));
+            if (names != null) playerNames.AddRange(names);
+        }
+
+        return playerNames.Distinct().OrderBy(n => n).ToList();
+    }
+
+    // https://api.nifs.no/teams/233 for Norge
     public async Task<PlayerModel> FetchPlayer(int teamId)
     {
         // iterate through 
@@ -95,4 +121,5 @@ public interface INifsApiService
     Task<List<NifsKampModel>> GetKampInfo(int tournamentId);
     Task<NifsKampModel> FetchMatch(int matchId);
     Task<PlayerModel> FetchPlayer(int teamId);
+    Task<List<string>> GetAllPlayersForTournament(string tournamentId);
 }

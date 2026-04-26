@@ -57,6 +57,69 @@
 
     <div class="row justify-content-center mt-3">
         <div class="col-12 col-lg-10">
+            <h4 class="mb-3">Sidebets</h4>
+
+            <div class="row g-3">
+
+                <!-- Toppscorer -->
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body position-relative">
+                            <label class="form-label fw-semibold">Toppscorar</label>
+
+                            <input id="Toppscorer"
+                                   class="form-control"
+                                   placeholder="Søk spelar..."
+                                   autocomplete="off"
+                                   @disabled />
+
+                            <div id="toppscorer-results"
+                                 class="list-group position-absolute w-100 mt-1"
+                                 style="z-index:1000;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Most Cards -->
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <label class="form-label fw-semibold">Flest kort</label>
+                            <input id="Mostcards"
+                                   class="form-control"
+                                   placeholder="Spelar"
+                                   @disabled />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winner -->
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <label class="form-label fw-semibold">Vinnar</label>
+                            <input id="Winnerteam"
+                                   class="form-control"
+                                   placeholder="Lag"
+                                   @disabled />
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-3">
+                @if (string.IsNullOrWhiteSpace(disabled))
+                {
+                    <button id="SideBetButton" class="btn btn-primary">
+                        Lagre sidebets
+                    </button>
+                }
+                else
+                {
+                    <span class="text-muted">Sidebet er låst.</span>
+                }
+            </div>
 
             @if (Model != null)
             {
@@ -122,7 +185,7 @@
                                 var isMatchOpen = item.date.AddHours(-2) >= now;
                                 var active = knockoutEnabled && isMatchOpen ? "" : "disabled";
 
-                                    <tr class="@(!knockoutEnabled ? "disabled-row" : "")">
+                                <tr class="@(!knockoutEnabled ? "disabled-row" : "")">
                                     <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
 
                                     <td>
@@ -153,7 +216,7 @@
             }
 
             <!-- SIDEBET -->
-@*             <h4 class="mt-5">SideBet</h4>
+            @*             <h4 class="mt-5">SideBet</h4>
             <hr/>
 
             <div class="row">
@@ -261,5 +324,51 @@
             tick();
             setInterval(tick, 1000);
         })();
+
+        //toppscorar autocomplete
+let debounceTimer;
+
+$('#Toppscorer').on('input', function () {
+    clearTimeout(debounceTimer);
+
+    const q = $(this).val();
+
+    if (!q || q.length < 2) {
+        $('#toppscorer-results').empty();
+        return;
+    }
+
+    debounceTimer = setTimeout(() => {
+        $.get('/Home/SearchPlayers', { q })
+            .done(results => {
+                const container = $('#toppscorer-results');
+                container.empty();
+
+                if (!results?.length) return;
+
+                results.forEach(name => {
+                    const item = $(`
+                        <button type="button" class="list-group-item list-group-item-action">
+                            ${name}
+                        </button>`);
+
+                    item.on('click', function () {
+                        $('#Toppscorer').val(name);
+                        container.empty();
+                    });
+
+                    container.append(item);
+                });
+            });
+    }, 200);
+});
+
+// close dropdown
+$(document).on('click', function (e) {
+    if (!$(e.target).closest('#Toppscorer, #toppscorer-results').length) {
+        $('#toppscorer-results').empty();
+    }
+        });
+
     </script>
 }

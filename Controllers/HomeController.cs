@@ -9,6 +9,7 @@ using System.Security.Claims;
 using MatchBetting.Data;
 using MatchBetting.Models;
 using MatchBetting.Service;
+using Microsoft.EntityFrameworkCore;
 using Result = MatchBetting.NifsModels.Result;
 
 namespace MatchBetting.Controllers
@@ -150,6 +151,58 @@ namespace MatchBetting.Controllers
         #endregion
 
         #region HelperMethods
+
+        //[Authorize(Roles = "Admin")]
+        [Authorize]
+        public async Task<IActionResult> SeedPlayers()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var allowedUsers = new[]
+            {
+                "8f477990-e3d8-41e4-b67e-5f3185034ec8",
+                "468d570b-b3f7-4075-8cc4-2681f72a6aec"
+            };
+
+            if (allowedUsers.Contains(userId))
+                return Forbid();
+
+            var names = await _nifsApiService.GetAllPlayersForTournament(TournamentID);
+            foreach (var name in names)
+            {
+                if (!_context.FootballPlayers.Any(p => p.Name == name))
+                    _context.FootballPlayers.Add(new FootballPlayers { Name = name });
+            }
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, count = names.Count });
+        }
+
+        [Authorize]
+        public IActionResult SearchPlayers(string q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+                return Json(new List<string>());
+
+            q = q.Trim();
+
+            var results = _context.FootballPlayers
+                .Where(p => EF.Functions.Like(p.Name, $"%{q}%"))
+                .Select(p => new
+                {
+                    Name = p.Name,
+                    Score =
+                        EF.Functions.Like(p.Name, $"{q}%") ? 0 :   // start av namn
+                        EF.Functions.Like(p.Name, $"% {q}%") ? 1 : // etter mellomrom
+                        2                                          // resten
+                })
+                .OrderBy(x => x.Score)
+                .ThenBy(x => x.Name)
+                .Take(10)
+                .Select(x => x.Name)
+                .ToList();
+
+            return Json(results);
+        }
 
         private List<MatchViewModel> GetAllMatchesUpToTimeRange()
         {
