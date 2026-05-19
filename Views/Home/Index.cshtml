@@ -12,7 +12,7 @@
     var deadline = new DateTime(2026, 06, 11, 00, 00, 00);
     var disabled = now > deadline ? "disabled" : "";
 
-    // 🔥 Knockout open time
+    // Knockout open time
     var knockoutOpenTime = new DateTime(2026, 06, 28, 06, 00, 00);
     var knockoutEnabled = now >= knockoutOpenTime;
 
@@ -31,7 +31,7 @@
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <img src="~/img/worldcup-2026.png"
                          alt="VM 2026"
-                         style="width: 70px; height: auto;"/>
+                         style="width: 70px; height: auto;" />
                     <div class="flex-grow-1">
                         <h1 class="h4 fw-bold mb-1">VM 2026</h1>
                         <div class="text-muted small mb-1">
@@ -71,7 +71,7 @@
                                    class="form-control"
                                    placeholder="Søk spelar..."
                                    autocomplete="off"
-                                   @disabled />
+                            @disabled />
 
                             <div id="toppscorer-results"
                                  class="list-group position-absolute w-100 mt-1"
@@ -83,12 +83,17 @@
                 <!-- Most Cards -->
                 <div class="col-md-4">
                     <div class="card h-100">
-                        <div class="card-body">
+                        <div class="card-body position-relative">
                             <label class="form-label fw-semibold">Flest kort</label>
                             <input id="Mostcards"
                                    class="form-control"
-                                   placeholder="Spelar"
-                                   @disabled />
+                                   placeholder="Søk spelar..."
+                                   autocomplete="off"
+                            @disabled />
+
+                            <div id="mostcards-results"
+                                 class="list-group position-absolute w-100 mt-1"
+                                 style="z-index:1000;"></div>
                         </div>
                     </div>
                 </div>
@@ -96,12 +101,17 @@
                 <!-- Winner -->
                 <div class="col-md-4">
                     <div class="card h-100">
-                        <div class="card-body">
+                        <div class="card-body position-relative">
                             <label class="form-label fw-semibold">Vinnar</label>
                             <input id="Winnerteam"
                                    class="form-control"
-                                   placeholder="Lag"
-                                   @disabled />
+                                   placeholder="Søk lag..."
+                                   autocomplete="off"
+                            @disabled />
+
+                            <div id="winnerteam-results"
+                                 class="list-group position-absolute w-100 mt-1"
+                                 style="z-index:1000;"></div>
                         </div>
                     </div>
                 </div>
@@ -130,34 +140,34 @@
 
                     <table class="table table-striped table-hover align-middle">
                         <tbody>
-                        @foreach (var item in groupMatches.Where(m => m.round == round).OrderBy(o => o.date))
-                        {
-                            var active = item.date.AddHours(-2) >= now ? "" : "disabled";
+                            @foreach (var item in groupMatches.Where(m => m.round == round).OrderBy(o => o.date))
+                            {
+                                var active = item.date.AddHours(-2) >= now ? "" : "disabled";
 
-                            <tr>
-                                <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
+                                <tr>
+                                    <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
 
-                                <td>
-                                    <img src="@item.HomeTeamLogoUrl" width="16" class="me-1"/>
-                                    @item.homeTeam
-                                </td>
+                                    <td>
+                                        <img src="@item.HomeTeamLogoUrl" width="16" class="me-1" />
+                                        @item.homeTeam
+                                    </td>
 
-                                <td class="text-center">
-                                    <input type="radio" name="match_@item.id" value="H" data-id="@item.id" @active/>
-                                </td>
-                                <td class="text-center">
-                                    <input type="radio" name="match_@item.id" value="U" data-id="@item.id" @active/>
-                                </td>
-                                <td class="text-center">
-                                    <input type="radio" name="match_@item.id" value="B" data-id="@item.id" @active/>
-                                </td>
+                                    <td class="text-center">
+                                        <input type="radio" name="match_@item.id" value="H" data-id="@item.id" @active />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="radio" name="match_@item.id" value="U" data-id="@item.id" @active />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="radio" name="match_@item.id" value="B" data-id="@item.id" @active />
+                                    </td>
 
-                                <td>
-                                    <img src="@item.AwayTeamLogoUrl" width="16" class="me-1"/>
-                                    @item.awayTeam
-                                </td>
-                            </tr>
-                        }
+                                    <td>
+                                        <img src="@item.AwayTeamLogoUrl" width="16" class="me-1" />
+                                        @item.awayTeam
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 }
@@ -180,35 +190,35 @@
 
                         <table class="table table-striped table-hover align-middle">
                             <tbody>
-                            @foreach (var item in knockoutMatches.Where(m => m.round == round).OrderBy(o => o.date))
-                            {
-                                var isMatchOpen = item.date.AddHours(-2) >= now;
-                                var active = knockoutEnabled && isMatchOpen ? "" : "disabled";
+                                @foreach (var item in knockoutMatches.Where(m => m.round == round).OrderBy(o => o.date))
+                                {
+                                    var isMatchOpen = item.date.AddHours(-2) >= now;
+                                    var active = knockoutEnabled && isMatchOpen ? "" : "disabled";
 
-                                <tr class="@(!knockoutEnabled ? "disabled-row" : "")">
-                                    <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
+                                    <tr class="@(!knockoutEnabled ? "disabled-row" : "")">
+                                        <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
 
-                                    <td>
-                                        <img src="@item.HomeTeamLogoUrl" width="16" class="me-1"/>
-                                        @item.homeTeam
-                                    </td>
+                                        <td>
+                                            <img src="@item.HomeTeamLogoUrl" width="16" class="me-1" />
+                                            @item.homeTeam
+                                        </td>
 
-                                    <td class="text-center">
-                                        <input type="radio" name="match_@item.id" value="H" data-id="@item.id" @active/>
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="radio" name="match_@item.id" value="U" data-id="@item.id" @active/>
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="radio" name="match_@item.id" value="B" data-id="@item.id" @active/>
-                                    </td>
+                                        <td class="text-center">
+                                            <input type="radio" name="match_@item.id" value="H" data-id="@item.id" @active />
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="radio" name="match_@item.id" value="U" data-id="@item.id" @active />
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="radio" name="match_@item.id" value="B" data-id="@item.id" @active />
+                                        </td>
 
-                                    <td>
-                                        <img src="@item.AwayTeamLogoUrl" width="16" class="me-1"/>
-                                        @item.awayTeam
-                                    </td>
-                                </tr>
-                            }
+                                        <td>
+                                            <img src="@item.AwayTeamLogoUrl" width="16" class="me-1" />
+                                            @item.awayTeam
+                                        </td>
+                                    </tr>
+                                }
                             </tbody>
                         </table>
                     }
@@ -251,7 +261,12 @@
         $(function () {
             GetCurrentUserBettings();
             GetCurrentUserSideBettings();
-            $('#SideBetButton').click(UpdateSideBets);
+
+            $('#SideBetButton').on('click', UpdateSideBets);
+
+            setupAutocomplete('#Toppscorer', '#toppscorer-results', '/Home/SearchPlayers');
+            setupAutocomplete('#Mostcards', '#mostcards-results', '/Home/SearchPlayers');
+            setupAutocomplete('#Winnerteam', '#winnerteam-results', '/Home/SearchTeams');
         });
 
         $(document).on("change", "input[type=radio]", function () {
@@ -261,7 +276,13 @@
             $.post("/Home/UpdateStorage", {
                 matchId: id,
                 result: value
-            }).always(GetCurrentUserBettings);
+            })
+                .done(r => {
+                    if (!r.success) {
+                        alert(r.message || 'Klarte ikkje å lagre tippinga.');
+                    }
+                })
+                .always(GetCurrentUserBettings);
         });
 
         function GetCurrentUserBettings() {
@@ -283,11 +304,24 @@
         }
 
         function UpdateSideBets() {
+            const button = $('#SideBetButton');
+            button.prop('disabled', true);
+
             $.post("/Home/UpdateSideBets", {
                 Toppscorer: $('#Toppscorer').val(),
                 MostCards: $('#Mostcards').val(),
                 WinnerTeam: $('#Winnerteam').val()
-            });
+            })
+                .done(r => {
+                    if (!r.success) {
+                        alert(r.message || 'Klarte ikkje å lagre sidebets.');
+                        return;
+                    }
+
+                    alert('Sidebets er lagra.');
+                })
+                .fail(() => alert('Klarte ikkje å lagre sidebets.'))
+                .always(() => button.prop('disabled', false));
         }
 
         function GetCurrentUserSideBettings() {
@@ -300,9 +334,58 @@
                     }
                 });
         }
-    </script>
 
-    <script>
+        function setupAutocomplete(inputSelector, resultsSelector, url) {
+            let debounceTimer;
+
+            $(inputSelector).on('input', function () {
+                clearTimeout(debounceTimer);
+
+                const q = $(this).val();
+                const container = $(resultsSelector);
+
+                if (!q || q.length < 2) {
+                    container.empty();
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    $.get(url, { q })
+                        .done(results => {
+                            container.empty();
+
+                            if (!results?.length) return;
+
+                            results.forEach(name => {
+                                const item = $('<button type="button" class="list-group-item list-group-item-action"></button>');
+                                item.text(name);
+
+                                item.on('click', function () {
+                                    $(inputSelector).val(name);
+                                    container.empty();
+                                });
+
+                                container.append(item);
+                            });
+                        });
+                }, 200);
+            });
+        }
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('#Toppscorer, #toppscorer-results').length) {
+                $('#toppscorer-results').empty();
+            }
+
+            if (!$(e.target).closest('#Mostcards, #mostcards-results').length) {
+                $('#mostcards-results').empty();
+            }
+
+            if (!$(e.target).closest('#Winnerteam, #winnerteam-results').length) {
+                $('#winnerteam-results').empty();
+            }
+        });
+
         (function () {
             const target = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ssZ")");
 
@@ -324,51 +407,5 @@
             tick();
             setInterval(tick, 1000);
         })();
-
-        //toppscorar autocomplete
-let debounceTimer;
-
-$('#Toppscorer').on('input', function () {
-    clearTimeout(debounceTimer);
-
-    const q = $(this).val();
-
-    if (!q || q.length < 2) {
-        $('#toppscorer-results').empty();
-        return;
-    }
-
-    debounceTimer = setTimeout(() => {
-        $.get('/Home/SearchPlayers', { q })
-            .done(results => {
-                const container = $('#toppscorer-results');
-                container.empty();
-
-                if (!results?.length) return;
-
-                results.forEach(name => {
-                    const item = $(`
-                        <button type="button" class="list-group-item list-group-item-action">
-                            ${name}
-                        </button>`);
-
-                    item.on('click', function () {
-                        $('#Toppscorer').val(name);
-                        container.empty();
-                    });
-
-                    container.append(item);
-                });
-            });
-    }, 200);
-});
-
-// close dropdown
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('#Toppscorer, #toppscorer-results').length) {
-        $('#toppscorer-results').empty();
-    }
-        });
-
     </script>
 }
