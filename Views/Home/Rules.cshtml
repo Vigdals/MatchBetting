@@ -9,7 +9,6 @@
             <!-- HERO -->
             <div class="p-4 p-md-5 rounded-3 border bg-light mb-4">
                 <div class="d-flex flex-column flex-md-row align-items-center gap-3 text-center text-md-start">
-
                     <div>
                         <img src="~/img/worldcup-2026.png"
                              class="img-fluid"
@@ -21,18 +20,18 @@
                             Slik fungerer tipping og poengsystemet
                         </p>
                     </div>
-
                 </div>
             </div>
 
             <!-- TIPPING -->
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="fw-bold">Tipping</h5>
+                    <h5 class="fw-bold">Tipping på kampar</h5>
                     <ul class="mb-0">
                         <li>Tipping på kampar må gjerast <strong>seinast 2 timar før kampstart</strong>.</li>
-                        <li>Du kan endre tips heilt fram til 2t før kampstart.</li>
-                        <li>I alle kampar tippar ein på resultat etter <strong>90 minutt</strong>.</li>
+                        <li>Du kan endre tippinga heilt fram til fristen for kvar enkelt kamp.</li>
+                        <li>I alle kampar tippar ein på resultat etter <strong>90 minutt, inkludert tilleggstid</strong>.</li>
+                        <li>Eventuell ekstraomgang og straffesparkkonkurranse tel ikkje for H/U/B-tippinga.</li>
                     </ul>
                 </div>
             </div>
@@ -40,15 +39,36 @@
             <!-- SIDEBETS -->
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="fw-bold">Sidebets (ikkje aktivt no)</h5>
+                    <h5 class="fw-bold">Sidebets</h5>
+                    <p class="mb-2">
+                        Sidebets gjeld for heile turneringa og må setjast før første kamp.
+                    </p>
                     <ul class="mb-0">
-                        <li>Toppscorar</li>
-                        <li>Flest kort (gult = 1, raudt = 2)</li>
-                        <li>Vinnarlag</li>
+                        <li><strong>Toppscorar:</strong> spelaren som scorar flest mål i turneringa.</li>
+                        <li><strong>Flest kort:</strong> spelaren som får flest kortpoeng i turneringa.</li>
+                        <li><strong>Vinnarlag:</strong> laget som vinn turneringa.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- KORT -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Kortpoeng</h5>
+                    <ul class="mb-0">
+                        <li><strong>Gult kort:</strong> 1 kortpoeng.</li>
+                        <li><strong>Direkte raudt kort:</strong> 2 kortpoeng.</li>
+                        <li>Dersom ein spelar får <strong>to gule kort og dermed raudt</strong>, tel berre dei to gule korta. Det raude kortet som følgjer av to gule tel ikkje ekstra.</li>
+                        <li>Kort gitt i ordinær tid, tilleggstid og ekstraomgang tel.</li>
+                        <li>Kort gitt i straffesparkkonkurranse tel ikkje.</li>
+                        <li>Kort til trenarar, støtteapparat eller benkespelarar tel ikkje i sidebeten, med mindre spelaren også er registrert som spelar i kampstatistikken.</li>
                     </ul>
 
-                    <div class="mt-2 text-muted small">
-                        Sidebets må settast før første kamp i turneringa.
+                    <div class="alert alert-secondary mt-3 mb-0">
+                        <strong>Døme:</strong>
+                        Ein spelar får eitt gult kort i éin kamp, og to gule kort i ein annan kamp.
+                        Då får spelaren totalt <strong>3 kortpoeng</strong>.
+                        Det raude kortet som kjem automatisk etter to gule tel ikkje ekstra.
                     </div>
                 </div>
             </div>
@@ -58,8 +78,22 @@
                 <div class="card-body">
                     <h5 class="fw-bold">Poengsystem</h5>
                     <ul class="mb-0">
-                        <li><strong>1 poeng</strong> for rett H/U/B per kamp</li>
-                        <li><strong>3 poeng</strong> for kvar korrekt sidebet</li>
+                        <li><strong>1 poeng</strong> for rett H/U/B per kamp.</li>
+                        <li><strong>3 poeng</strong> for korrekt toppscorar.</li>
+                        <li><strong>3 poeng</strong> for korrekt spelar med flest kortpoeng.</li>
+                        <li><strong>3 poeng</strong> for korrekt vinnarlag.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- DELT FØRSTEPLASS PÅ SIDEBETS -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Delt førsteplass på sidebets</h5>
+                    <ul class="mb-0">
+                        <li>Dersom fleire spelarar deler førsteplassen som toppscorar, blir alle rekna som rett svar.</li>
+                        <li>Dersom fleire spelarar deler førsteplassen på flest kortpoeng, blir alle rekna som rett svar.</li>
+                        <li>For vinnarlag finst det berre eitt rett svar.</li>
                     </ul>
                 </div>
             </div>
@@ -69,8 +103,9 @@
                 <div class="card-body">
                     <h5 class="fw-bold">Resultat og vinnar</h5>
                     <ul class="mb-0">
-                        <li>Den med flest poeng vinn.</li>
-                        <li>Ved lik poengsum vil premie delast eller avgjerast etter eigne reglar. Stein, saks, papir eller slåstkamp</li>
+                        <li>Den med flest poeng totalt vinn.</li>
+                        <li>Ved lik poengsum blir premie delt, med mindre deltakarane blir einige om noko anna.</li>
+                        <li>Arrangør kan rette openberre feil i kampresultat, kort, sidebets eller poeng dersom datagrunnlaget viser seg å vere feil.</li>
                     </ul>
                 </div>
             </div>

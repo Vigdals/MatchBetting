@@ -22,6 +22,7 @@ namespace MatchBetting.Controllers
 
         private readonly string TournamentID = "56";
         private static readonly DateTime SideBetDeadline = new(2026, 6, 11, 0, 0, 0);
+        private static readonly DateTime TournamentStart = new(2026, 6, 11, 0, 0, 0);
         //private readonly string TournamentID = "59";
 
         public HomeController(ApplicationDbContext context, ILogService logservice, INifsApiService nifsApiService)
@@ -242,10 +243,14 @@ namespace MatchBetting.Controllers
         private List<MatchViewModel> GetAllMatchesUpToTimeRange()
         {
             var now = GetServerDateTimeNow();
+
             var matches = _context.Matches
-                .Where(m => now >= m.Timestamp.AddHours(-2))
+                .Where(m =>
+                    m.Timestamp >= TournamentStart &&
+                    now >= m.Timestamp.AddHours(-2))
                 .OrderBy(o => o.Timestamp)
                 .ToList();
+
             return matches.Select(m => new MatchViewModel(m)).ToList();
         }
 
@@ -276,7 +281,13 @@ namespace MatchBetting.Controllers
         {
             var now = GetServerDateTimeNow();
             var bets = _context.MatchBettings.Where(mb => mb.UserId == userId).ToList();
-            var matchesWithResults = _context.Matches.Where(m => m.Result != string.Empty && now >= m.Timestamp).ToList();
+
+            var matchesWithResults = _context.Matches
+                .Where(m =>
+                    m.Timestamp >= TournamentStart &&
+                    m.Result != string.Empty &&
+                    now >= m.Timestamp)
+                .ToList();
 
             return matchesWithResults
                 .Select(match => bets.FirstOrDefault(b => b.MatchId == match.MatchId))
