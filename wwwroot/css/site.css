@@ -152,3 +152,63 @@ body {
     object-fit: contain;
     border-radius: 2px;
 }
+
+/* Mobil: vis kvar kamp som ei kompakt kort-rad */
+@media (max-width: 576px) {
+    .betting-table {
+        table-layout: auto;
+        width: 100%;
+    }
+
+        .betting-table colgroup {
+            display: none;
+        }
+
+        .betting-table tbody,
+        .betting-table tr,
+        .betting-table td {
+            display: block;
+            width: 100% !important;
+        }
+
+        .betting-table tr {
+            padding: 0.55rem 0.65rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .betting-table td {
+            padding: 0.15rem 0 !important;
+            border: 0;
+        }
+
+        .betting-table .date-col {
+            width: 100%;
+            font-size: 0.85rem;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+
+        .betting-table .team-cell {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            font-weight: 500;
+        }
+
+        .betting-table .pick-cell {
+            width: 100% !important;
+            padding-top: 0.4rem !important;
+            padding-bottom: 0.4rem !important;
+        }
+
+        .betting-table .pick-options {
+            width: 100%;
+            max-width: 220px;
+            margin: 0.25rem auto;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+            .betting-table .pick-options input[type="radio"] {
+                transform: scale(1.15);
+            }
+}}
