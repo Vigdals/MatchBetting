@@ -20,6 +20,7 @@ public class AdminController : Controller
     {
         "8f477990-e3d8-41e4-b67e-5f3185034ec8",
         "468d570b-b3f7-4075-8cc4-2681f72a6aec",
+        "5c0062fc-4277-489d-8e4d-b40ed0c91279",
         "cc12a0c4-a89d-41cd-867f-868cf6f21f21"
     };
 

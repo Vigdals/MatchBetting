@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
-using MatchBetting.NifsModels;
-using MatchBetting.Utils;
-using MatchBetting.ViewModels;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using MatchBetting.Data;
 using MatchBetting.Models;
+using MatchBetting.NifsModels;
 using MatchBetting.Service;
+using MatchBetting.Utils;
+using MatchBetting.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Result = MatchBetting.NifsModels.Result;
 
@@ -20,24 +18,39 @@ namespace MatchBetting.Controllers
         private readonly ILogService _logService;
         private readonly INifsApiService _nifsApiService;
 
-        private readonly string TournamentID = "56";
-        private static readonly DateTime SideBetDeadline = new(2026, 6, 11, 0, 0, 0);
-        private static readonly DateTime TournamentStart = new(2026, 6, 11, 0, 0, 0);
-        //private readonly string TournamentID = "59";
+        // NIFS tournament id for VM 2026.
+        private const string TournamentId = "56";
 
-        public HomeController(ApplicationDbContext context, ILogService logservice, INifsApiService nifsApiService)
+        // Første kamp startar 11.06.2026 kl. 21:00 norsk tid.
+        // Sidebets blir låst og offentlege 2 timar før første kamp.
+        private static readonly DateTime SideBetDeadline = new(2026, 6, 11, 19, 0, 0);
+        private static readonly DateTime TournamentStart = new(2026, 6, 11, 21, 0, 0);
+
+        // Brukarar som kan sjå sidebets før fristen.
+        private static readonly HashSet<string> SideBetAdminUserIds = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "8f477990-e3d8-41e4-b67e-5f3185034ec8",
+            "468d570b-b3f7-4075-8cc4-2681f72a6aec",
+            "5c0062fc-4277-489d-8e4d-b40ed0c91279",
+            "cc12a0c4-a89d-41cd-867f-868cf6f21f21"
+        };
+
+        public HomeController(
+            ApplicationDbContext context,
+            ILogService logservice,
+            INifsApiService nifsApiService)
         {
             _context = context;
             _logService = logservice;
             _nifsApiService = nifsApiService;
         }
 
-        #region ControllerActions
+        #region Pages
 
         [Authorize]
         public async Task<IActionResult> Index()
         {
-            var tournamentViewModelList = _nifsApiService.GetTournamentInfo(TournamentID);
+            var tournamentViewModelList = _nifsApiService.GetTournamentInfo(TournamentId);
             var matchViewModelList = new List<NifsKampViewModel>();
 
             foreach (var tournamentViewModel in tournamentViewModelList)
@@ -48,8 +61,6 @@ namespace MatchBetting.Controllers
                 {
                     matchViewModelList.Add(new NifsKampViewModel(match, tournamentViewModel));
                     AddOrUpdateMatchInDatabase(match);
-
-                    // Debug.WriteLine($"{tournamentViewModel.gruppenamn} {match.homeTeam.name} + {match.awayTeam.name}");
                 }
             }
 
@@ -66,39 +77,37 @@ namespace MatchBetting.Controllers
         }
 
         [Authorize]
-        public IActionResult Rules() => View();
-
-        [Authorize]
         public async Task<IActionResult> LeaderBoard()
         {
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var currentUser = await _context.Set<ApplicationUser>().FindAsync(currentUserId);
-            var gruppeId = currentUser?.CompetitionGroupCompetitionId;
+            var currentUserId = GetCurrentUserId();
+            var currentUser = await GetCurrentUser(currentUserId);
+            var groupId = currentUser?.CompetitionGroupCompetitionId;
+
+            if (groupId == null)
+            {
+                return Forbid();
+            }
 
             var currentMatches = GetMatchesWithinTimeRange();
 
             foreach (var match in currentMatches)
             {
-                var thematch = await _nifsApiService.FetchMatch(match.MatchId);
-                AddOrUpdateMatchInDatabase(thematch);
+                var fetchedMatch = await _nifsApiService.FetchMatch(match.MatchId);
+                AddOrUpdateMatchInDatabase(fetchedMatch);
             }
 
-            var users = _context.Set<ApplicationUser>()
-                .Where(u => u.CompetitionGroupCompetitionId == gruppeId)
-                .ToList()
-                .Select(user => new LeaderBoardByUserViewModel
-                {
-                    UserId = user.Id,
-                    //UserName = Euro2024Users.HentBrukernavn(user.Id),
-                    UserName = user.FullName,
-                    Score = CalculatePoints(user.Id),
-                    CurrentBettings = GetCurrentUserCurrentBettings(user.Id, currentMatches)
-                }).ToList();
+            var users = GetLeaderboardUsers(groupId.Value, currentMatches);
 
             ViewBag.CurrentMatches = currentMatches;
 
-            try { await _context.SaveChangesAsync(); }
-            catch (Exception e) { Console.WriteLine(e); }
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
 
             return View(users);
         }
@@ -106,25 +115,19 @@ namespace MatchBetting.Controllers
         [Authorize]
         public async Task<IActionResult> Historikk()
         {
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var currentUser = await _context.Set<ApplicationUser>().FindAsync(currentUserId);
-            var gruppeId = currentUser?.CompetitionGroupCompetitionId;
+            var currentUserId = GetCurrentUserId();
+            var currentUser = await GetCurrentUser(currentUserId);
+            var groupId = currentUser?.CompetitionGroupCompetitionId;
 
-            var currentMatches = GetAllMatchesUpToTimeRange();
+            if (groupId == null)
+            {
+                return Forbid();
+            }
 
-            var users = _context.Set<ApplicationUser>()
-                .Where(u => u.CompetitionGroupCompetitionId == gruppeId)
-                .ToList()
-                .Select(user => new LeaderBoardByUserViewModel
-                {
-                    UserId = user.Id,
-                    //UserName = Euro2024Users.HentEtternavn(user.Id),
-                    UserName = user.FullName,
-                    Score = CalculatePoints(user.Id),
-                    CurrentBettings = GetCurrentUserCurrentBettings(user.Id, currentMatches)
-                }).ToList();
+            var historicalMatches = GetAllMatchesUpToTimeRange();
+            var users = GetLeaderboardUsers(groupId.Value, historicalMatches);
 
-            ViewBag.CurrentMatches = currentMatches;
+            ViewBag.CurrentMatches = historicalMatches;
 
             return View(users);
         }
@@ -132,58 +135,280 @@ namespace MatchBetting.Controllers
         [Authorize]
         public async Task<IActionResult> SideBets()
         {
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var currentUser = await _context.Set<ApplicationUser>().FindAsync(currentUserId);
-            var gruppeId = currentUser?.CompetitionGroupCompetitionId;
+            var currentUserId = GetCurrentUserId();
+
+            ViewBag.SideBetDeadline = SideBetDeadline;
+            ViewBag.IsAdminPreview = IsSideBetAdmin(currentUserId) && !IsSideBetLocked();
+
+            if (!AreSideBetsVisible(currentUserId))
+            {
+                return View(new List<AllSideBettingsViewModel>());
+            }
+
+            var currentUser = await GetCurrentUser(currentUserId);
+            var groupId = currentUser?.CompetitionGroupCompetitionId;
+
+            if (groupId == null)
+            {
+                return Forbid();
+            }
 
             var users = _context.Set<ApplicationUser>()
-                .Where(u => u.CompetitionGroupCompetitionId == gruppeId)
+                .Where(u => u.CompetitionGroupCompetitionId == groupId)
                 .ToList()
                 .Select(user => new AllSideBettingsViewModel
                 {
                     UserId = user.Id,
-                    //UserName = Euro2024Users.HentBrukernavn(user.Id),
                     UserName = user.FullName,
                     CurrentSideBettings = GetAllUsersSideBettings(user.Id)
-                }).ToList();
+                })
+                .OrderBy(u => u.UserName)
+                .ToList();
 
             return View(users);
         }
 
+        [Authorize]
+        public IActionResult Rules()
+        {
+            return View();
+        }
+
         #endregion
 
-        #region HelperMethods
+        #region Betting endpoints
 
-        //[Authorize(Roles = "Admin")]
         [Authorize]
-        public async Task<IActionResult> SeedPlayers()
+        [HttpPost]
+        public async Task<IActionResult> UpdateStorage(int matchId, string result)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var allowedUsers = new[]
-            {
-                "8f477990-e3d8-41e4-b67e-5f3185034ec8",
-                "468d570b-b3f7-4075-8cc4-2681f72a6aec"
-            };
+            var userId = GetCurrentUserId();
+            var now = GetServerDateTimeNow();
 
-            if (string.IsNullOrWhiteSpace(userId) || !allowedUsers.Contains(userId))
-                return Forbid();
-
-            var names = await _nifsApiService.GetAllPlayersForTournament(TournamentID);
-            foreach (var name in names)
+            try
             {
-                if (!_context.FootballPlayers.Any(p => p.Name == name))
-                    _context.FootballPlayers.Add(new FootballPlayers { Name = name });
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    throw new Exception("User is not authenticated");
+                }
+
+                if (!new[] { "H", "U", "B" }.Contains(result))
+                {
+                    throw new Exception("Invalid betting result");
+                }
+
+                var match = _context.Matches.FirstOrDefault(m => m.MatchId == matchId);
+                if (match == null || now.AddHours(2) > match.Timestamp)
+                {
+                    throw new Exception("Cannot bet on this match when starting time is less than two hours from now");
+                }
+
+                var dbMatchBetting = _context.MatchBettings
+                    .FirstOrDefault(m => m.UserId == userId && m.MatchId == matchId);
+
+                if (dbMatchBetting == null)
+                {
+                    _context.MatchBettings.Add(new Models.MatchBetting
+                    {
+                        MatchId = matchId,
+                        Result = result,
+                        UserId = userId
+                    });
+                }
+                else
+                {
+                    dbMatchBetting.Result = result;
+                    _context.MatchBettings.Update(dbMatchBetting);
+                }
+
+                await _context.SaveChangesAsync();
+
+                var message = $"Successfully stored match id {matchId} with result {result} for user {userId}";
+                _logService.LogInfo(userId, message);
+
+                return Json(new { Success = true, Message = message });
             }
+            catch (Exception ex)
+            {
+                var message = $"Failed to store match id {matchId} with result {result}. Error: {ex.Message}";
+                _logService.LogInfo(userId ?? string.Empty, message);
 
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, count = names.Count });
+                return Json(new { Success = false, Message = message });
+            }
         }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> RemoveStorage(int matchId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    throw new Exception("User is not authenticated");
+                }
+
+                var matchBetting = _context.MatchBettings
+                    .FirstOrDefault(m => m.UserId == userId && m.MatchId == matchId);
+
+                if (matchBetting == null)
+                {
+                    return Json(new
+                    {
+                        Success = true,
+                        Message = $"No betting found for match id {matchId} for user {userId}"
+                    });
+                }
+
+                _context.MatchBettings.Remove(matchBetting);
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    Success = true,
+                    Message = $"Successfully removed match id {matchId} for user {userId}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    Success = false,
+                    Message = $"Failed to remove match id {matchId}. Error: {ex.Message}"
+                });
+            }
+        }
+
+        [Authorize]
+        public IActionResult GetCurrentUserBettings()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var bettings = _context.MatchBettings
+                    .Where(m => m.UserId == userId)
+                    .Select(mb => new MatchBettingViewModel(mb))
+                    .ToList();
+
+                return Json(new { Success = true, Bettings = bettings });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    Success = false,
+                    Message = $"Failed to get bettings. Error: {ex.Message}"
+                });
+            }
+        }
+
+        #endregion
+
+        #region Sidebet endpoints
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> UpdateSideBets(SideBettingMinViewModel sideBet)
+        {
+            try
+            {
+                if (IsSideBetLocked())
+                {
+                    throw new Exception("Sidebets are locked");
+                }
+
+                var userId = GetCurrentUserId();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    throw new Exception("User is not authenticated");
+                }
+
+                sideBet.Toppscorer = sideBet.Toppscorer?.Trim() ?? string.Empty;
+                sideBet.WinnerTeam = sideBet.WinnerTeam?.Trim() ?? string.Empty;
+                sideBet.MostCards = sideBet.MostCards?.Trim() ?? string.Empty;
+
+                var dbSideBet = _context.SideBettings.FirstOrDefault(m => m.UserId == userId);
+
+                if (dbSideBet == null)
+                {
+                    _context.SideBettings.Add(new SideBet
+                    {
+                        Toppscorer = sideBet.Toppscorer,
+                        WinnerTeam = sideBet.WinnerTeam,
+                        MostCards = sideBet.MostCards,
+                        UserId = userId
+                    });
+                }
+                else
+                {
+                    dbSideBet.Toppscorer = sideBet.Toppscorer;
+                    dbSideBet.WinnerTeam = sideBet.WinnerTeam;
+                    dbSideBet.MostCards = sideBet.MostCards;
+
+                    _context.SideBettings.Update(dbSideBet);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { Success = true, Message = "Sidebets lagra" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    Success = false,
+                    Message = $"Failed to store sidebettings. Error: {ex.Message}"
+                });
+            }
+        }
+
+        [Authorize]
+        public IActionResult GetCurrentUserSideBettings()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var sideBettings = _context.SideBettings.FirstOrDefault(m => m.UserId == userId)
+                    ?? new SideBet
+                    {
+                        UserId = userId ?? string.Empty,
+                        Toppscorer = string.Empty,
+                        WinnerTeam = string.Empty,
+                        MostCards = string.Empty
+                    };
+
+                return Json(new
+                {
+                    Success = true,
+                    SideBettings = new SideBettingViewModel(sideBettings)
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    Success = false,
+                    Message = $"Failed to get sidebettings. Error: {ex.Message}"
+                });
+            }
+        }
+
+        #endregion
+
+        #region Search endpoints
 
         [Authorize]
         public IActionResult SearchPlayers(string q)
         {
             if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            {
                 return Json(new List<string>());
+            }
 
             q = q.Trim();
 
@@ -191,11 +416,11 @@ namespace MatchBetting.Controllers
                 .Where(p => EF.Functions.Like(p.Name, $"%{q}%"))
                 .Select(p => new
                 {
-                    Name = p.Name,
+                    p.Name,
                     Score =
-                        EF.Functions.Like(p.Name, $"{q}%") ? 0 :   // start av namn
-                        EF.Functions.Like(p.Name, $"% {q}%") ? 1 : // etter mellomrom
-                        2                                          // resten
+                        EF.Functions.Like(p.Name, $"{q}%") ? 0 :
+                        EF.Functions.Like(p.Name, $"% {q}%") ? 1 :
+                        2
                 })
                 .OrderBy(x => x.Score)
                 .ThenBy(x => x.Name)
@@ -210,7 +435,9 @@ namespace MatchBetting.Controllers
         public IActionResult SearchTeams(string q)
         {
             if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            {
                 return Json(new List<string>());
+            }
 
             q = q.Trim();
 
@@ -240,236 +467,9 @@ namespace MatchBetting.Controllers
             return Json(results);
         }
 
-        private List<MatchViewModel> GetAllMatchesUpToTimeRange()
-        {
-            var now = GetServerDateTimeNow();
-
-            var matches = _context.Matches
-                .Where(m =>
-                    m.Timestamp >= TournamentStart &&
-                    now >= m.Timestamp.AddHours(-2))
-                .OrderBy(o => o.Timestamp)
-                .ToList();
-
-            return matches.Select(m => new MatchViewModel(m)).ToList();
-        }
-
-        private List<MatchViewModel> GetMatchesWithinTimeRange()
-        {
-            var now = GetServerDateTimeNow();
-            var matches = _context.Matches
-                .Where(m => now >= m.Timestamp.AddHours(-2) && now <= m.Timestamp.Date.AddDays(1))
-                .OrderBy(o => o.Timestamp)
-                .ToList();
-            return matches.Select(m => new MatchViewModel(m)).ToList();
-        }
-
-        private List<MatchBettingViewModel> GetCurrentUserCurrentBettings(string userId, List<MatchViewModel> currentMatches)
-        {
-            var matchBettings = new List<MatchBettingViewModel>();
-            foreach (var match in currentMatches)
-            {
-                var betting = _context.MatchBettings.FirstOrDefault(m => m.UserId == userId && m.MatchId == match.MatchId);
-                matchBettings.Add(betting != null
-                    ? new MatchBettingViewModel(betting)
-                    : new MatchBettingViewModel(match, userId));
-            }
-            return matchBettings;
-        }
-
-        private int CalculatePoints(string userId)
-        {
-            var now = GetServerDateTimeNow();
-            var bets = _context.MatchBettings.Where(mb => mb.UserId == userId).ToList();
-
-            var matchesWithResults = _context.Matches
-                .Where(m =>
-                    m.Timestamp >= TournamentStart &&
-                    m.Result != string.Empty &&
-                    now >= m.Timestamp)
-                .ToList();
-
-            return matchesWithResults
-                .Select(match => bets.FirstOrDefault(b => b.MatchId == match.MatchId))
-                .Count(bet => bet != null && bet.Result == matchesWithResults
-                    .First(m => m.MatchId == bet.MatchId).Result);
-        }
-
-        private DateTime GetServerDateTimeNow()
-        {
-            var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
-            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, osloTimeZone);
-        }
-
-        private bool IsSideBetLocked()
-        {
-            return GetServerDateTimeNow() > SideBetDeadline;
-        }
-
-        private void AddOrUpdateMatchInDatabase(NifsKampModel match)
-        {
-            try
-            {
-                var dbMatch = _context.Matches.FirstOrDefault(m => m.MatchId == match.id);
-                if (dbMatch == null)
-                {
-                    dbMatch = new Match
-                    {
-                        AwayTeam = match.awayTeam.name,
-                        HomeTeam = match.homeTeam.name,
-                        MatchId = match.id,
-                        Timestamp = match.timestamp,
-                        HomeScore90 = match.result.homeScore90,
-                        AwayScore90 = match.result.awayScore90,
-                        Result = GetResultFullTime(match.result),
-                        MatchStatusId = match.matchStatusId,
-                        MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId),
-                        HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg",
-                        AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg"
-                    };
-                    _context.Matches.Add(dbMatch);
-                }
-                else
-                {
-                    dbMatch.AwayTeam = match.awayTeam.name;
-                    dbMatch.HomeTeam = match.homeTeam.name;
-                    dbMatch.Timestamp = match.timestamp;
-                    dbMatch.HomeScore90 = match.result.homeScore90;
-                    dbMatch.AwayScore90 = match.result.awayScore90;
-                    dbMatch.Result = GetResultFullTime(match.result);
-                    dbMatch.MatchStatusId = match.matchStatusId;
-                    dbMatch.MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId);
-                    dbMatch.HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
-                    dbMatch.AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
-                    _context.Matches.Update(dbMatch);
-                }
-            }
-            catch (Exception ex) { }
-        }
-
-        private string GetResultFullTime(Result matchResult)
-        {
-            if (matchResult.homeScore90 > matchResult.awayScore90) return "H";
-            if (matchResult.homeScore90 < matchResult.awayScore90) return "B";
-            return "U";
-        }
-
         #endregion
 
-        #region Apis
-
-        [Authorize]
-        [HttpPost]
-        public async Task<IActionResult> UpdateStorage(int matchId, string result)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var now = GetServerDateTimeNow();
-
-            try
-            {
-                if (string.IsNullOrWhiteSpace(userId))
-                    throw new Exception("User is not authenticated");
-
-                if (!new[] { "H", "U", "B" }.Contains(result))
-                    throw new Exception("Invalid betting result");
-
-                var match = _context.Matches.FirstOrDefault(m => m.MatchId == matchId);
-                if (match == null || now.AddHours(2) > match.Timestamp)
-                    throw new Exception("Cannot bet on this match when starting time is less than two hours from now");
-
-                var dbMatchBetting = _context.MatchBettings.FirstOrDefault(m => m.UserId == userId && m.MatchId == matchId);
-                if (dbMatchBetting == null)
-                {
-                    _context.MatchBettings.Add(new Models.MatchBetting { MatchId = matchId, Result = result, UserId = userId });
-                }
-                else
-                {
-                    dbMatchBetting.Result = result;
-                    _context.MatchBettings.Update(dbMatchBetting);
-                }
-
-                await _context.SaveChangesAsync();
-
-                var message = $"Successfully stored match id {matchId} with result {result} for user {userId}";
-                _logService.LogInfo(userId, message);
-                return Json(new { Success = true, Message = message });
-            }
-            catch (Exception ex)
-            {
-                var message = $"Failed to store match id {matchId} with result {result}. Error: {ex.Message}";
-                _logService.LogInfo(userId ?? string.Empty, message);
-                return Json(new { Success = false, Message = message });
-            }
-        }
-
-        [Authorize]
-        [HttpPost]
-        public async Task<IActionResult> UpdateSideBets(SideBettingMinViewModel sideBet)
-        {
-            try
-            {
-                if (IsSideBetLocked())
-                    throw new Exception("Sidebets are locked");
-
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrWhiteSpace(userId))
-                    throw new Exception("User is not authenticated");
-
-                sideBet.Toppscorer = sideBet.Toppscorer?.Trim() ?? string.Empty;
-                sideBet.WinnerTeam = sideBet.WinnerTeam?.Trim() ?? string.Empty;
-                sideBet.MostCards = sideBet.MostCards?.Trim() ?? string.Empty;
-
-                var sidebet = _context.SideBettings.FirstOrDefault(m => m.UserId == userId);
-                if (sidebet == null)
-                {
-                    _context.SideBettings.Add(new SideBet
-                    {
-                        Toppscorer = sideBet.Toppscorer,
-                        WinnerTeam = sideBet.WinnerTeam,
-                        MostCards = sideBet.MostCards,
-                        UserId = userId
-                    });
-                }
-                else
-                {
-                    sidebet.Toppscorer = sideBet.Toppscorer;
-                    sidebet.WinnerTeam = sideBet.WinnerTeam;
-                    sidebet.MostCards = sideBet.MostCards;
-                    _context.SideBettings.Update(sidebet);
-                }
-
-                await _context.SaveChangesAsync();
-                return Json(new { Success = true, Message = "Sidebets lagra" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { Success = false, Message = $"Failed to store sidebettings. Error: {ex.Message}" });
-            }
-        }
-
-        [Authorize]
-        [HttpPost]
-        public async Task<IActionResult> RemoveStorage(int matchId)
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrWhiteSpace(userId))
-                    throw new Exception("User is not authenticated");
-
-                var matchBetting = _context.MatchBettings.FirstOrDefault(m => m.UserId == userId && m.MatchId == matchId);
-                if (matchBetting == null)
-                    return Json(new { Success = true, Message = $"No betting found for match id {matchId} for user {userId}" });
-
-                _context.MatchBettings.Remove(matchBetting);
-                await _context.SaveChangesAsync();
-                return Json(new { Success = true, Message = $"Successfully removed match id {matchId} for user {userId}" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { Success = false, Message = $"Failed to remove match id {matchId}. Error: {ex.Message}" });
-            }
-        }
+        #region Match endpoints
 
         [Authorize]
         public async Task<IActionResult> FetchMatch(int matchId)
@@ -486,54 +486,220 @@ namespace MatchBetting.Controllers
             }
         }
 
-        [Authorize]
-        public IActionResult GetCurrentUserBettings()
+        #endregion
+
+        #region Private user helpers
+
+        private string? GetCurrentUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
+        private async Task<ApplicationUser?> GetCurrentUser(string? userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return null;
+            }
+
+            return await _context.Set<ApplicationUser>().FindAsync(userId);
+        }
+
+        private List<LeaderBoardByUserViewModel> GetLeaderboardUsers(
+            int groupId,
+            List<MatchViewModel> matches)
+        {
+            return _context.Set<ApplicationUser>()
+                .Where(u => u.CompetitionGroupCompetitionId == groupId)
+                .ToList()
+                .Select(user => new LeaderBoardByUserViewModel
+                {
+                    UserId = user.Id,
+                    UserName = user.FullName,
+                    Score = CalculatePoints(user.Id),
+                    CurrentBettings = GetCurrentUserCurrentBettings(user.Id, matches)
+                })
+                .OrderByDescending(u => u.Score)
+                .ThenBy(u => u.UserName)
+                .ToList();
+        }
+
+        #endregion
+
+        #region Private match helpers
+
+        private List<MatchViewModel> GetMatchesWithinTimeRange()
+        {
+            var now = GetServerDateTimeNow();
+
+            var matches = _context.Matches
+                .Where(m =>
+                    m.Timestamp >= TournamentStart &&
+                    now >= m.Timestamp.AddHours(-2) &&
+                    now <= m.Timestamp.Date.AddDays(1))
+                .OrderBy(o => o.Timestamp)
+                .ToList();
+
+            return matches.Select(m => new MatchViewModel(m)).ToList();
+        }
+
+        private List<MatchViewModel> GetAllMatchesUpToTimeRange()
+        {
+            var now = GetServerDateTimeNow();
+
+            var matches = _context.Matches
+                .Where(m =>
+                    m.Timestamp >= TournamentStart &&
+                    now >= m.Timestamp.AddHours(-2))
+                .OrderBy(o => o.Timestamp)
+                .ToList();
+
+            return matches.Select(m => new MatchViewModel(m)).ToList();
+        }
+
+        private void AddOrUpdateMatchInDatabase(NifsKampModel match)
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var bettings = _context.MatchBettings.Where(m => m.UserId == userId).Select(mb => new MatchBettingViewModel(mb));
-                return Json(new { Success = true, Bettings = bettings });
+                var dbMatch = _context.Matches.FirstOrDefault(m => m.MatchId == match.id);
+
+                if (dbMatch == null)
+                {
+                    dbMatch = new Match
+                    {
+                        AwayTeam = match.awayTeam.name,
+                        HomeTeam = match.homeTeam.name,
+                        MatchId = match.id,
+                        Timestamp = match.timestamp,
+                        HomeScore90 = match.result.homeScore90,
+                        AwayScore90 = match.result.awayScore90,
+                        Result = GetResultFullTime(match.result),
+                        MatchStatusId = match.matchStatusId,
+                        MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId),
+                        HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg",
+                        AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg"
+                    };
+
+                    _context.Matches.Add(dbMatch);
+                    return;
+                }
+
+                dbMatch.AwayTeam = match.awayTeam.name;
+                dbMatch.HomeTeam = match.homeTeam.name;
+                dbMatch.Timestamp = match.timestamp;
+                dbMatch.HomeScore90 = match.result.homeScore90;
+                dbMatch.AwayScore90 = match.result.awayScore90;
+                dbMatch.Result = GetResultFullTime(match.result);
+                dbMatch.MatchStatusId = match.matchStatusId;
+                dbMatch.MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId);
+                dbMatch.HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
+                dbMatch.AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
+
+                _context.Matches.Update(dbMatch);
             }
             catch (Exception ex)
             {
-                return Json(new { Success = false, Message = $"Failed to get bettings. Error: {ex.Message}" });
+                Console.WriteLine($"Failed to add or update match {match.id}: {ex.Message}");
             }
         }
 
-        [Authorize]
-        public IActionResult GetCurrentUserSideBettings()
+        private static string GetResultFullTime(Result matchResult)
         {
-            try
+            if (matchResult.homeScore90 > matchResult.awayScore90)
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var sideBettings = _context.SideBettings.FirstOrDefault(m => m.UserId == userId)
-                    ?? new SideBet { UserId = userId, Toppscorer = string.Empty, WinnerTeam = string.Empty, MostCards = string.Empty };
-                return Json(new { Success = true, SideBettings = new SideBettingViewModel(sideBettings) });
+                return "H";
             }
-            catch (Exception ex)
+
+            if (matchResult.homeScore90 < matchResult.awayScore90)
             {
-                return Json(new { Success = false, Message = $"Failed to get sidebettings. Error: {ex.Message}" });
+                return "B";
             }
+
+            return "U";
         }
 
-        [Authorize]
-        public List<SideBettingViewModel> GetAllUsersSideBettings(string userId)
+        #endregion
+
+        #region Private betting helpers
+
+        private List<MatchBettingViewModel> GetCurrentUserCurrentBettings(
+            string userId,
+            List<MatchViewModel> currentMatches)
         {
-            try
+            var matchBettings = new List<MatchBettingViewModel>();
+
+            foreach (var match in currentMatches)
             {
-                var sideBettings = _context.SideBettings.FirstOrDefault(m => m.UserId == userId);
-                return sideBettings != null
-                    ? new List<SideBettingViewModel> { new SideBettingViewModel(sideBettings) }
-                    : new List<SideBettingViewModel>();
+                var betting = _context.MatchBettings
+                    .FirstOrDefault(m => m.UserId == userId && m.MatchId == match.MatchId);
+
+                matchBettings.Add(betting != null
+                    ? new MatchBettingViewModel(betting)
+                    : new MatchBettingViewModel(match, userId));
             }
-            catch { return new List<SideBettingViewModel>(); }
+
+            return matchBettings;
         }
 
-        [Authorize]
-        public IActionResult GetGoalsAndCardsforPlayer(string playerId)
+        private int CalculatePoints(string userId)
         {
-            return View();
+            var now = GetServerDateTimeNow();
+
+            var bets = _context.MatchBettings
+                .Where(mb => mb.UserId == userId)
+                .ToList();
+
+            var matchesWithResults = _context.Matches
+                .Where(m =>
+                    m.Timestamp >= TournamentStart &&
+                    m.Result != string.Empty &&
+                    now >= m.Timestamp)
+                .ToList();
+
+            return matchesWithResults
+                .Select(match => bets.FirstOrDefault(b => b.MatchId == match.MatchId))
+                .Count(bet =>
+                    bet != null &&
+                    bet.Result == matchesWithResults.First(m => m.MatchId == bet.MatchId).Result);
+        }
+
+        #endregion
+
+        #region Private sidebet helpers
+
+        private List<SideBettingViewModel> GetAllUsersSideBettings(string userId)
+        {
+            var sideBettings = _context.SideBettings.FirstOrDefault(m => m.UserId == userId);
+
+            return sideBettings != null
+                ? new List<SideBettingViewModel> { new SideBettingViewModel(sideBettings) }
+                : new List<SideBettingViewModel>();
+        }
+
+        private bool IsSideBetLocked()
+        {
+            return GetServerDateTimeNow() >= SideBetDeadline;
+        }
+
+        private static bool IsSideBetAdmin(string? userId)
+        {
+            return !string.IsNullOrWhiteSpace(userId) &&
+                   SideBetAdminUserIds.Contains(userId);
+        }
+
+        private bool AreSideBetsVisible(string? userId)
+        {
+            return IsSideBetLocked() || IsSideBetAdmin(userId);
+        }
+
+        #endregion
+
+        #region Private time helpers
+
+        private DateTime GetServerDateTimeNow()
+        {
+            var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, osloTimeZone);
         }
 
         #endregion

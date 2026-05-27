@@ -96,3 +96,59 @@ body {
     justify-content: center;
     align-items: center;
 }
+
+/* ========== BETTING TABLE ========== */
+
+.betting-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+    .betting-table .date-col {
+        width: 120px;
+        white-space: nowrap;
+    }
+
+    .betting-table .team-col {
+        width: auto;
+    }
+
+    .betting-table .pick-col {
+        width: 150px;
+    }
+
+    .betting-table td {
+        vertical-align: middle;
+    }
+
+.team-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pick-cell {
+    width: 150px;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.pick-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: center;
+    justify-items: center;
+    width: 120px;
+    margin: 0 auto;
+}
+
+    .pick-options input[type="radio"] {
+        margin: 0;
+    }
+
+.team-logo {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    border-radius: 2px;
+}

@@ -7,17 +7,35 @@
     var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
     var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, osloTimeZone);
 
-    var worldCupStart = new DateTime(2026, 06, 11, 02, 00, 00, DateTimeKind.Utc);
+    var worldCupStart = new DateTime(2026, 06, 11, 21, 00, 00);
 
-    var deadline = new DateTime(2026, 06, 11, 00, 00, 00);
-    var disabled = now > deadline ? "disabled" : "";
+    // Sidebets blir låst 2 timar før første kamp.
+    var deadline = new DateTime(2026, 06, 11, 19, 00, 00);
+    var disabled = now >= deadline ? "disabled" : "";
 
-    // Knockout open time
+    // Sluttspel opnar for tipping etter gruppespelet.
     var knockoutOpenTime = new DateTime(2026, 06, 28, 06, 00, 00);
     var knockoutEnabled = now >= knockoutOpenTime;
 
     var groupMatches = Model?.Where(m => m.phase == "group") ?? Enumerable.Empty<NifsKampViewModel>();
     var knockoutMatches = Model?.Where(m => m.phase == "knockout") ?? Enumerable.Empty<NifsKampViewModel>();
+
+    string TeamLogo(string? logoUrl)
+    {
+        if (string.IsNullOrWhiteSpace(logoUrl))
+        {
+            return Url.Content("~/img/worldcup-2026.png");
+        }
+
+        if (logoUrl.StartsWith("~/"))
+        {
+            return Url.Content(logoUrl);
+        }
+
+        return logoUrl;
+    }
+
+    var fallbackLogo = Url.Content("~/img/worldcup-2026.png");
 }
 
 <div class="container py-3">
@@ -27,13 +45,14 @@
         <div class="col-12 col-lg-10">
 
             <div class="p-3 rounded-3 border bg-light">
-
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <img src="~/img/worldcup-2026.png"
                          alt="VM 2026"
                          style="width: 70px; height: auto;" />
+
                     <div class="flex-grow-1">
                         <h1 class="h4 fw-bold mb-1">VM 2026</h1>
+
                         <div class="text-muted small mb-1">
                             Legg inn tippingane dine før fristen
                         </div>
@@ -44,7 +63,6 @@
                             <span class="badge text-bg-secondary">Tippekonk</span>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -55,13 +73,13 @@
         </div>
     </div>
 
+    <!-- SIDEBETS -->
     <div class="row justify-content-center mt-3">
         <div class="col-12 col-lg-10">
             <h4 class="mb-3">Sidebets</h4>
 
             <div class="row g-3">
 
-                <!-- Toppscorer -->
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="card-body position-relative">
@@ -71,7 +89,7 @@
                                    class="form-control"
                                    placeholder="Søk spelar..."
                                    autocomplete="off"
-                            @disabled />
+                                   @disabled />
 
                             <div id="toppscorer-results"
                                  class="list-group position-absolute w-100 mt-1"
@@ -80,16 +98,16 @@
                     </div>
                 </div>
 
-                <!-- Most Cards -->
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="card-body position-relative">
                             <label class="form-label fw-semibold">Flest kort</label>
+
                             <input id="Mostcards"
                                    class="form-control"
                                    placeholder="Søk spelar..."
                                    autocomplete="off"
-                            @disabled />
+                                   @disabled />
 
                             <div id="mostcards-results"
                                  class="list-group position-absolute w-100 mt-1"
@@ -98,16 +116,16 @@
                     </div>
                 </div>
 
-                <!-- Winner -->
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="card-body position-relative">
                             <label class="form-label fw-semibold">Vinnar</label>
+
                             <input id="Winnerteam"
                                    class="form-control"
                                    placeholder="Søk lag..."
                                    autocomplete="off"
-                            @disabled />
+                                   @disabled />
 
                             <div id="winnerteam-results"
                                  class="list-group position-absolute w-100 mt-1"
@@ -130,6 +148,12 @@
                     <span class="text-muted">Sidebet er låst.</span>
                 }
             </div>
+        </div>
+    </div>
+
+    <!-- MATCHES -->
+    <div class="row justify-content-center mt-3">
+        <div class="col-12 col-lg-10">
 
             @if (Model != null)
             {
@@ -138,32 +162,59 @@
                 {
                     <h3 class="mt-4">Runde @round</h3>
 
-                    <table class="table table-striped table-hover align-middle">
+                    <table class="table table-striped table-hover align-middle betting-table">
+                        <colgroup>
+                            <col class="date-col" />
+                            <col class="team-col" />
+                            <col class="pick-col" />
+                            <col class="team-col" />
+                        </colgroup>
+
                         <tbody>
                             @foreach (var item in groupMatches.Where(m => m.round == round).OrderBy(o => o.date))
                             {
                                 var active = item.date.AddHours(-2) >= now ? "" : "disabled";
 
                                 <tr>
-                                    <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
+                                    <td class="date-col">
+                                        @item.date.ToString("dd.MM HH:mm")
+                                    </td>
 
-                                    <td>
-                                        <img src="@item.HomeTeamLogoUrl" width="16" class="me-1" />
+                                    <td class="team-cell">
+                                        <img src="@TeamLogo(item.HomeTeamLogoUrl)"
+                                             class="team-logo me-1"
+                                             alt="@item.homeTeam"
+                                             onerror="this.onerror=null;this.src='@fallbackLogo';" />
                                         @item.homeTeam
                                     </td>
 
-                                    <td class="text-center">
-                                        <input type="radio" name="match_@item.id" value="H" data-id="@item.id" @active />
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="radio" name="match_@item.id" value="U" data-id="@item.id" @active />
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="radio" name="match_@item.id" value="B" data-id="@item.id" @active />
+                                    <td class="pick-cell">
+                                        <div class="pick-options">
+                                            <input type="radio"
+                                                   name="match_@item.id"
+                                                   value="H"
+                                                   data-id="@item.id"
+                                                   @active />
+
+                                            <input type="radio"
+                                                   name="match_@item.id"
+                                                   value="U"
+                                                   data-id="@item.id"
+                                                   @active />
+
+                                            <input type="radio"
+                                                   name="match_@item.id"
+                                                   value="B"
+                                                   data-id="@item.id"
+                                                   @active />
+                                        </div>
                                     </td>
 
-                                    <td>
-                                        <img src="@item.AwayTeamLogoUrl" width="16" class="me-1" />
+                                    <td class="team-cell">
+                                        <img src="@TeamLogo(item.AwayTeamLogoUrl)"
+                                             class="team-logo me-1"
+                                             alt="@item.awayTeam"
+                                             onerror="this.onerror=null;this.src='@fallbackLogo';" />
                                         @item.awayTeam
                                     </td>
                                 </tr>
@@ -186,9 +237,16 @@
 
                     @foreach (var round in knockoutMatches.Select(m => m.round).Distinct().OrderBy(r => r))
                     {
-                        <h4>Runde @round</h4>
+                        <h4 class="mt-4">Runde @round</h4>
 
-                        <table class="table table-striped table-hover align-middle">
+                        <table class="table table-striped table-hover align-middle betting-table">
+                            <colgroup>
+                                <col class="date-col" />
+                                <col class="team-col" />
+                                <col class="pick-col" />
+                                <col class="team-col" />
+                            </colgroup>
+
                             <tbody>
                                 @foreach (var item in knockoutMatches.Where(m => m.round == round).OrderBy(o => o.date))
                                 {
@@ -196,25 +254,45 @@
                                     var active = knockoutEnabled && isMatchOpen ? "" : "disabled";
 
                                     <tr class="@(!knockoutEnabled ? "disabled-row" : "")">
-                                        <td style="width: 140px">@item.date.ToString("dd.MM HH:mm")</td>
+                                        <td class="date-col">
+                                            @item.date.ToString("dd.MM HH:mm")
+                                        </td>
 
-                                        <td>
-                                            <img src="@item.HomeTeamLogoUrl" width="16" class="me-1" />
+                                        <td class="team-cell">
+                                            <img src="@TeamLogo(item.HomeTeamLogoUrl)"
+                                                 class="team-logo me-1"
+                                                 alt="@item.homeTeam"
+                                                 onerror="this.onerror=null;this.src='@fallbackLogo';" />
                                             @item.homeTeam
                                         </td>
 
-                                        <td class="text-center">
-                                            <input type="radio" name="match_@item.id" value="H" data-id="@item.id" @active />
-                                        </td>
-                                        <td class="text-center">
-                                            <input type="radio" name="match_@item.id" value="U" data-id="@item.id" @active />
-                                        </td>
-                                        <td class="text-center">
-                                            <input type="radio" name="match_@item.id" value="B" data-id="@item.id" @active />
+                                        <td class="pick-cell">
+                                            <div class="pick-options">
+                                                <input type="radio"
+                                                       name="match_@item.id"
+                                                       value="H"
+                                                       data-id="@item.id"
+                                                       @active />
+
+                                                <input type="radio"
+                                                       name="match_@item.id"
+                                                       value="U"
+                                                       data-id="@item.id"
+                                                       @active />
+
+                                                <input type="radio"
+                                                       name="match_@item.id"
+                                                       value="B"
+                                                       data-id="@item.id"
+                                                       @active />
+                                            </div>
                                         </td>
 
-                                        <td>
-                                            <img src="@item.AwayTeamLogoUrl" width="16" class="me-1" />
+                                        <td class="team-cell">
+                                            <img src="@TeamLogo(item.AwayTeamLogoUrl)"
+                                                 class="team-logo me-1"
+                                                 alt="@item.awayTeam"
+                                                 onerror="this.onerror=null;this.src='@fallbackLogo';" />
                                             @item.awayTeam
                                         </td>
                                     </tr>
@@ -224,30 +302,6 @@
                     }
                 }
             }
-
-            <!-- SIDEBET -->
-            @*             <h4 class="mt-5">SideBet</h4>
-            <hr/>
-
-            <div class="row">
-                <div class="col-md-6">
-
-                    <input id="Toppscorer" class="form-control mb-2 input_sidebet" placeholder="Toppscorar" @disabled/>
-                    <input id="Mostcards" class="form-control mb-2 input_sidebet" placeholder="Flest kort" @disabled/>
-                    <input id="Winnerteam" class="form-control mb-2 input_sidebet" placeholder="Vinnar" @disabled/>
-
-                    <div id="loadingDiv" style="display: none">Lagrar...</div>
-
-                    @if (string.IsNullOrWhiteSpace(disabled))
-                    {
-                        <button id="SideBetButton" class="btn btn-primary">Lagre</button>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Sidebet er låst.</span>
-                    }
-                </div>
-            </div> *@
 
         </div>
     </div>
@@ -387,14 +441,18 @@
         });
 
         (function () {
-            const target = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ssZ")");
+            const target = new Date("@worldCupStart.ToString("yyyy-MM-ddTHH:mm:ss")");
 
             function tick() {
                 const el = document.getElementById("wc-countdown");
                 if (!el) return;
 
                 const diff = target - new Date();
-                if (diff <= 0) return el.innerText = "VM ER I GANG!";
+
+                if (diff <= 0) {
+                    el.innerText = "VM ER I GANG!";
+                    return;
+                }
 
                 const d = Math.floor(diff / 86400000);
                 const h = Math.floor((diff / 3600000) % 24);
