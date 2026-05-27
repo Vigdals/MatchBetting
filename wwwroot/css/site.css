@@ -194,29 +194,29 @@ body {
             padding: 0.12rem 0 !important;
         }
 
-        .betting-table .date-col {
-            grid-area: date;
-            width: 100% !important;
-            font-size: 0.85rem;
-            color: #6c757d;
-            white-space: nowrap;
-            margin-bottom: 0.15rem;
-        }
+            .betting-table td:nth-child(1) {
+                grid-area: date;
+                width: 100% !important;
+                font-size: 0.85rem;
+                color: #6c757d;
+                white-space: nowrap;
+                margin-bottom: 0.15rem;
+            }
 
-        .betting-table .team-cell:first-of-type {
-            grid-area: home;
-        }
+            .betting-table td:nth-child(2) {
+                grid-area: home;
+            }
 
-        .betting-table .pick-cell {
-            grid-area: pick;
-            width: 108px !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
+            .betting-table td:nth-child(3) {
+                grid-area: pick;
+                width: 108px !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
 
-        .betting-table .team-cell:last-of-type {
-            grid-area: away;
-        }
+            .betting-table td:nth-child(4) {
+                grid-area: away;
+            }
 
         .betting-table .team-cell {
             display: flex;
