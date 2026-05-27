@@ -33,18 +33,24 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Making it more user friendly. Its a betting app ffs
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
-    {
-        options.SignIn.RequireConfirmedAccount = false;
+{
+    options.SignIn.RequireConfirmedAccount = false;
 
-        options.Password.RequireDigit = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequiredLength = 4;
-        options.Password.RequiredUniqueChars = 1;
-    })
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 4;
+    options.Password.RequiredUniqueChars = 1;
+})
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromDays(60);
+    options.SlidingExpiration = true;
+});
 
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<ILogService, LogService>();
@@ -65,6 +71,8 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
