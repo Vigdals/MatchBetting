@@ -1,4 +1,193 @@
-﻿@{
+﻿@using MatchBetting.Controllers
+@model AdminDashboardViewModel
+
+@{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
-Hi, mister Admin
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+
+            <div class="p-4 rounded-3 border bg-light mb-4">
+                <h2 class="fw-bold mb-1">Admin</h2>
+                <p class="text-muted mb-0">
+                    Enkle driftsverktøy for tippekonken.
+                </p>
+            </div>
+
+            @if (TempData["AdminMessage"] != null)
+            {
+                <div class="alert alert-info">
+                    @TempData["AdminMessage"]
+                </div>
+            }
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="text-muted small">Brukarar</div>
+                            <div class="h3 mb-0">@Model.UserCount</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="text-muted small">Utan gruppe</div>
+                            <div class="h3 mb-0">@Model.UsersWithoutGroupCount</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="text-muted small">Kampar</div>
+                            <div class="h3 mb-0">@Model.MatchCount</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="text-muted small">Spelarar</div>
+                            <div class="h3 mb-0">@Model.PlayerCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Vedlikehald</h5>
+
+                    <div class="d-flex flex-column flex-md-row gap-2">
+                        <form asp-action="SeedPlayers" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-primary">
+                                Seed spelarar frå NIFS
+                            </button>
+                        </form>
+
+                        <form asp-action="FixNullSideBets" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-secondary">
+                                Fiks tomme sidebets
+                            </button>
+                        </form>
+
+                        <form asp-action="ClearUsersWithoutEmailGroup" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit"
+                                    class="btn btn-outline-warning"
+                                    onclick="return confirm('Fjerne gruppe frå alle brukarar utan e-post?');">
+                                Fjern gruppe frå brukarar utan e-post
+                            </button>
+                        </form>
+                    </div>
+
+                    <hr />
+
+                    <form asp-action="AddPlayer" method="post" class="row g-2">
+                        @Html.AntiForgeryToken()
+                        <div class="col-12 col-md-8">
+                            <input name="name"
+                                   class="form-control"
+                                   placeholder="Legg til spelar manuelt, t.d. Martin Ødegaard" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                Legg til spelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Brukarar</h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Namn</th>
+                                    <th>E-post</th>
+                                    <th>Gruppe</th>
+                                    <th class="text-center">Tips</th>
+                                    <th class="text-center">Sidebet</th>
+                                    <th style="width: 320px;">Endre gruppe</th>
+                                    <th style="width: 120px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">
+                                            @(string.IsNullOrWhiteSpace(user.FullName) ? "-" : user.FullName)
+                                        </td>
+                                        <td>
+                                            @(user.Email ?? "-")
+                                        </td>
+                                        <td>
+                                            @(user.CompetitionGroupName ?? "Ingen gruppe")
+                                        </td>
+                                        <td class="text-center">
+                                            @user.MatchBetCount
+                                        </td>
+                                        <td class="text-center">
+                                            @(user.HasSideBet ? "Ja" : "Nei")
+                                        </td>
+                                        <td>
+                                            <form asp-action="SetUserGroup" method="post" class="d-flex gap-2">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+
+                                                <select name="competitionGroupId" class="form-select form-select-sm">
+                                                    <option value="">Ingen gruppe</option>
+                                                    @foreach (var group in Model.Groups)
+                                                    {
+                                                        <option value="@group.Value"
+                                                                selected="@(user.CompetitionGroupId?.ToString() == group.Value)">
+                                                            @group.Text
+                                                        </option>
+                                                    }
+                                                </select>
+
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    Lagre
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form asp-action="DeleteUser" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Slette brukaren og alle tips/sidebets?');">
+                                                    Slett
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-muted small">
+                        Sletting fjernar brukaren, kamp-tips og sidebets. Bruk gruppeendring dersom du berre vil skjule gamle deltakarar frå leaderboard.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
