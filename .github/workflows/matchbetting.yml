@@ -1,0 +1,66 @@
+# .github/workflows/partiportalen.yml
+name: Build & deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  SLOT_NAME: 'Production'
+  ARTIFACT_NAME: 'drop'
+
+  # App-namn i Azure:
+  AZURE_WEBAPP_NAME_PROD: 'MatchBetting'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish -c Release -o "${{ github.workspace }}/${{ env.ARTIFACT_NAME }}" --no-build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ github.workspace }}/${{ env.ARTIFACT_NAME }}
+          include-hidden-files: true
+
+  deploy_prod:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: windows-latest
+    environment:
+      name: prod
+      url: ${{ steps.deploy.outputs.webapp-url }}
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./drop
+
+      - name: Deploy to Azure Web App (prod)
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name:  ${{ env.AZURE_WEBAPP_NAME_PROD }}
+          slot-name: ${{ env.SLOT_NAME }}
+          package:   ./drop
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_PROD }}
+
