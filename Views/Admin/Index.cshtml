@@ -1,5 +1,6 @@
 ﻿@using MatchBetting.Controllers
 @model AdminDashboardViewModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
@@ -12,7 +13,7 @@
             <div class="p-4 rounded-3 border bg-light mb-4">
                 <h2 class="fw-bold mb-1">Admin</h2>
                 <p class="text-muted mb-0">
-                    Enkle driftsverktøy for tippekonken.
+                    Enkel drift av tippekonken.
                 </p>
             </div>
 
@@ -66,21 +67,21 @@
                     <h5 class="fw-bold">Vedlikehald</h5>
 
                     <div class="d-flex flex-column flex-md-row gap-2">
-                        <form asp-action="SeedPlayers" method="post">
+                        <form action="@Url.Action("SeedPlayers", "Admin")" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-primary">
                                 Seed spelarar frå NIFS
                             </button>
                         </form>
 
-                        <form asp-action="FixNullSideBets" method="post">
+                        <form action="@Url.Action("FixNullSideBets", "Admin")" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-outline-secondary">
                                 Fiks tomme sidebets
                             </button>
                         </form>
 
-                        <form asp-action="ClearUsersWithoutEmailGroup" method="post">
+                        <form action="@Url.Action("ClearUsersWithoutEmailGroup", "Admin")" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit"
                                     class="btn btn-outline-warning"
@@ -92,7 +93,7 @@
 
                     <hr />
 
-                    <form asp-action="AddPlayer" method="post" class="row g-2">
+                    <form action="@Url.Action("AddPlayer", "Admin")" method="post" class="row g-2">
                         @Html.AntiForgeryToken()
                         <div class="col-12 col-md-8">
                             <input name="name"
@@ -122,30 +123,40 @@
                                     <th class="text-center">Tips</th>
                                     <th class="text-center">Sidebet</th>
                                     <th style="width: 320px;">Endre gruppe</th>
+                                    <th style="width: 280px;">Nytt passord</th>
                                     <th style="width: 120px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var user in Model.Users)
                                 {
+                                    var displayName = string.IsNullOrWhiteSpace(user.FullName)
+                                        ? user.Email ?? user.UserName ?? user.UserId
+                                        : user.FullName;
+
                                     <tr>
                                         <td class="fw-semibold">
                                             @(string.IsNullOrWhiteSpace(user.FullName) ? "-" : user.FullName)
                                         </td>
+
                                         <td>
                                             @(user.Email ?? "-")
                                         </td>
+
                                         <td>
                                             @(user.CompetitionGroupName ?? "Ingen gruppe")
                                         </td>
+
                                         <td class="text-center">
                                             @user.MatchBetCount
                                         </td>
+
                                         <td class="text-center">
                                             @(user.HasSideBet ? "Ja" : "Nei")
                                         </td>
+
                                         <td>
-                                            <form asp-action="SetUserGroup" method="post" class="d-flex gap-2">
+                                            <form action="@Url.Action("SetUserGroup", "Admin")" method="post" class="d-flex gap-2">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="userId" value="@user.UserId" />
 
@@ -153,10 +164,14 @@
                                                     <option value="">Ingen gruppe</option>
                                                     @foreach (var group in Model.Groups)
                                                     {
-                                                        <option value="@group.Value"
-                                                                selected="@(user.CompetitionGroupId?.ToString() == group.Value)">
-                                                            @group.Text
-                                                        </option>
+                                                        if (user.CompetitionGroupId?.ToString() == group.Value)
+                                                        {
+                                                            <option value="@group.Value" selected>@group.Text</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@group.Value">@group.Text</option>
+                                                        }
                                                     }
                                                 </select>
 
@@ -165,10 +180,32 @@
                                                 </button>
                                             </form>
                                         </td>
+
                                         <td>
-                                            <form asp-action="DeleteUser" method="post">
+                                            <form action="@Url.Action("ResetPassword", "Admin")" method="post" class="d-flex gap-2">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="userId" value="@user.UserId" />
+
+                                                <input name="newPassword"
+                                                       type="text"
+                                                       class="form-control form-control-sm"
+                                                       placeholder="Nytt passord"
+                                                       minlength="4"
+                                                       autocomplete="off" />
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        onclick="return confirm('Setje nytt passord for @displayName?');">
+                                                    Set
+                                                </button>
+                                            </form>
+                                        </td>
+
+                                        <td>
+                                            <form action="@Url.Action("DeleteUser", "Admin")" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+
                                                 <button type="submit"
                                                         class="btn btn-sm btn-outline-danger"
                                                         onclick="return confirm('Slette brukaren og alle tips/sidebets?');">
@@ -183,7 +220,9 @@
                     </div>
 
                     <div class="text-muted small">
-                        Sletting fjernar brukaren, kamp-tips og sidebets. Bruk gruppeendring dersom du berre vil skjule gamle deltakarar frå leaderboard.
+                        Sletting fjernar brukaren, kamp-tips og sidebets.
+                        Bruk gruppeendring dersom du berre vil skjule gamle deltakarar frå leaderboard.
+                        Passordreset set nytt passord direkte for brukaren.
                     </div>
                 </div>
             </div>

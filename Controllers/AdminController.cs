@@ -19,7 +19,8 @@ public class AdminController : Controller
     private static readonly HashSet<string> AllowedAdminUserIds = new(StringComparer.OrdinalIgnoreCase)
     {
         "8f477990-e3d8-41e4-b67e-5f3185034ec8",
-        "468d570b-b3f7-4075-8cc4-2681f72a6aec"
+        "468d570b-b3f7-4075-8cc4-2681f72a6aec",
+        "cc12a0c4-a89d-41cd-867f-868cf6f21f21"
     };
 
     private readonly ApplicationDbContext _context;
@@ -82,6 +83,7 @@ public class AdminController : Controller
                 Value = g.CompetitionId.ToString(),
                 Text = $"{g.Name}{(g.isactive ? string.Empty : " (inaktiv)")}"
             }).ToList(),
+
             UserCount = users.Count,
             UsersWithoutGroupCount = users.Count(u => u.CompetitionGroupId == null),
             MatchCount = await _context.Matches.CountAsync(),
@@ -186,6 +188,51 @@ public class AdminController : Controller
             ? $"Sletta {DisplayName(user)} og tilhøyrande tips."
             : $"Klarte ikkje å slette {DisplayName(user)}: {string.Join(", ", result.Errors.Select(e => e.Description))}";
 
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(string userId, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            TempData["AdminMessage"] = "Manglar brukar-id.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+        {
+            TempData["AdminMessage"] = "Nytt passord manglar.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (newPassword.Length < 4)
+        {
+            TempData["AdminMessage"] = "Passordet må vere minst 4 teikn.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            TempData["AdminMessage"] = "Fann ikkje brukaren.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+        if (!result.Succeeded)
+        {
+            TempData["AdminMessage"] =
+                $"Klarte ikkje å resette passord for {DisplayName(user)}: " +
+                string.Join(", ", result.Errors.Select(e => e.Description));
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        TempData["AdminMessage"] = $"Passordet er oppdatert for {DisplayName(user)}.";
         return RedirectToAction(nameof(Index));
     }
 
