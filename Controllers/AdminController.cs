@@ -2,6 +2,7 @@
 using MatchBetting.Data;
 using MatchBetting.Models;
 using MatchBetting.Service;
+using MatchBetting.ViewModels.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -54,6 +55,9 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Index()
     {
+        var sideBetResult = await _context.SideBetResults
+            .FirstOrDefaultAsync(r => r.TournamentId == TournamentId);
+
         var users = await _context.Users
             .Include(u => u.CompetitionGroup)
             .OrderBy(u => u.CompetitionGroupCompetitionId)
@@ -95,6 +99,37 @@ public class AdminController : Controller
         };
 
         return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveSideBetResult(string toppscorer, string winnerTeam, string mostCards)
+    {
+        toppscorer = toppscorer.Trim() ?? string.Empty;
+        winnerTeam = winnerTeam.Trim() ?? string.Empty;
+        mostCards = mostCards.Trim() ?? string.Empty;
+
+        var sideBetResult = await _context.SideBetResults.FirstOrDefaultAsync(r => r.TournamentId == TournamentId);
+
+        if (sideBetResult == null)
+        {
+            sideBetResult = new SideBetResult
+            {
+                TournamentId = TournamentId
+            };
+
+            _context.SideBetResults.Add(sideBetResult);
+        }
+
+        sideBetResult.Toppscorer = toppscorer;
+        sideBetResult.WinnerTeam = winnerTeam;
+        sideBetResult.MostCards = mostCards;
+        sideBetResult.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        TempData["AdminMessage"] = "Sidebets er lagra, bro.";
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
@@ -141,10 +176,7 @@ public class AdminController : Controller
             .Where(u => u.Email == null || u.Email.Trim() == string.Empty)
             .ToListAsync();
 
-        foreach (var user in users)
-        {
-            user.CompetitionGroupCompetitionId = null;
-        }
+        foreach (var user in users) user.CompetitionGroupCompetitionId = null;
 
         await _context.SaveChangesAsync();
 
@@ -257,9 +289,7 @@ public class AdminController : Controller
             if (oldToppscorer != sideBet.Toppscorer ||
                 oldMostCards != sideBet.MostCards ||
                 oldWinnerTeam != sideBet.WinnerTeam)
-            {
                 changed++;
-            }
         }
 
         await _context.SaveChangesAsync();
@@ -325,30 +355,4 @@ public class AdminController : Controller
         if (!string.IsNullOrWhiteSpace(user.UserName)) return user.UserName;
         return user.Id;
     }
-}
-
-public class AdminDashboardViewModel
-{
-    public int UserCount { get; set; }
-    public int UsersWithoutGroupCount { get; set; }
-    public int MatchCount { get; set; }
-    public int MatchBetCount { get; set; }
-    public int SideBetCount { get; set; }
-    public int PlayerCount { get; set; }
-    public int GroupCount { get; set; }
-
-    public List<AdminUserViewModel> Users { get; set; } = new();
-    public List<SelectListItem> Groups { get; set; } = new();
-}
-
-public class AdminUserViewModel
-{
-    public string UserId { get; set; } = string.Empty;
-    public string? Email { get; set; }
-    public string? UserName { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public int? CompetitionGroupId { get; set; }
-    public string? CompetitionGroupName { get; set; }
-    public int MatchBetCount { get; set; }
-    public bool HasSideBet { get; set; }
 }

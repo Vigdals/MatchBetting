@@ -14,6 +14,7 @@ namespace MatchBetting.Data
         public DbSet<SideBet> SideBettings { get; set; }
         public DbSet<Log> Logs { get; set; }
         public DbSet<FootballPlayers> FootballPlayers { get; set; }
+        public DbSet<SideBetResult> SideBetResults { get; set; }
     }
 
 }
