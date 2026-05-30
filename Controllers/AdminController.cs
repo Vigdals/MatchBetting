@@ -16,6 +16,7 @@ namespace MatchBetting.Controllers;
 public class AdminController : Controller
 {
     private const string TournamentId = "56";
+    private readonly IFootballDataService _footballDataService;
 
     private static readonly HashSet<string> AllowedAdminUserIds = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -32,11 +33,13 @@ public class AdminController : Controller
     public AdminController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        INifsApiService nifsApiService)
+        INifsApiService nifsApiService,
+        IFootballDataService footballDataService)
     {
         _context = context;
         _userManager = userManager;
         _nifsApiService = nifsApiService;
+        _footballDataService = footballDataService;
     }
 
     public override void OnActionExecuting(ActionExecutingContext context)
@@ -129,6 +132,51 @@ public class AdminController : Controller
         await _context.SaveChangesAsync();
 
         TempData["AdminMessage"] = "Sidebets er lagra, bro.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FetchTopScorerFromFootballData()
+    {
+        const string competitionCode = "WC";
+        const int season = 2026;
+
+        var topScorers = await _footballDataService
+            .GetTopScorersAsync(competitionCode, season);
+
+        if (topScorers.Count == 0)
+        {
+            TempData["AdminMessage"] =
+                "Fann ingen toppscorarar frå Football-Data. Turneringa er truleg ikkje starta, eller API-et har ikkje data enno.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        var sideBetResult = await _context.SideBetResults
+            .FirstOrDefaultAsync(r => r.TournamentId == TournamentId);
+
+        if (sideBetResult == null)
+        {
+            sideBetResult = new SideBetResult
+            {
+                TournamentId = TournamentId
+            };
+
+            _context.SideBetResults.Add(sideBetResult);
+        }
+
+        sideBetResult.Toppscorer = string.Join(", ", topScorers.Select(s => s.PlayerName));
+        sideBetResult.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var scorerText = string.Join(
+            ", ",
+            topScorers.Select(s => $"{s.PlayerName} ({s.Goals})"));
+
+        TempData["AdminMessage"] = $"Oppdaterte toppscorar frå Football-Data: {scorerText}.";
+
         return RedirectToAction(nameof(Index));
     }
 

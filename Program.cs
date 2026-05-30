@@ -27,6 +27,8 @@ else
                        ?? throw new InvalidOperationException("Key Vault secret 'db-connection-matchBetting' not found.");
 }
 
+
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -55,6 +57,16 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<INifsApiService, NifsApiService>();
+builder.Services.AddHttpClient<IFootballDataService, FootballDataService>((sp, client) =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+
+    var apiKey = configuration["api-football-data"]
+                 ?? throw new InvalidOperationException("Missing configuration value 'api-football-data'.");
+
+    client.BaseAddress = new Uri("https://api.football-data.org/v4/");
+    client.DefaultRequestHeaders.Add("X-Auth-Token", apiKey);
+});
 
 var app = builder.Build();
 
