@@ -375,29 +375,74 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SeedPlayers()
     {
-        var names = await _nifsApiService.GetAllPlayersForTournament(TournamentId);
-        var added = 0;
+        var apiNames = await _nifsApiService.GetAllPlayersForTournament(TournamentId);
 
-        foreach (var name in names
-                     .Where(n => !string.IsNullOrWhiteSpace(n))
-                     .Select(n => n.Trim())
-                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        var normalizedApiNames = apiNames
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Select(n => n.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var apiNameSet = normalizedApiNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var dbPlayers = await _context.FootballPlayers.ToListAsync();
+
+        var added = 0;
+        var removed = 0;
+        var renamed = 0;
+
+        foreach (var dbPlayer in dbPlayers)
         {
-            if (await _context.FootballPlayers.AnyAsync(p => p.Name == name))
+            var trimmedName = dbPlayer.Name?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(trimmedName))
+            {
+                _context.FootballPlayers.Remove(dbPlayer);
+                removed++;
+                continue;
+            }
+
+            if (!string.Equals(dbPlayer.Name, trimmedName, StringComparison.Ordinal))
+            {
+                dbPlayer.Name = trimmedName;
+                renamed++;
+            }
+
+            if (!apiNameSet.Contains(trimmedName))
+            {
+                _context.FootballPlayers.Remove(dbPlayer);
+                removed++;
+            }
+        }
+
+        var dbNameSet = dbPlayers
+            .Where(p => !_context.Entry(p).State.Equals(EntityState.Deleted))
+            .Select(p => p.Name?.Trim() ?? string.Empty)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var name in normalizedApiNames)
+        {
+            if (dbNameSet.Contains(name))
             {
                 continue;
             }
 
-            _context.FootballPlayers.Add(new FootballPlayers { Name = name });
+            _context.FootballPlayers.Add(new FootballPlayers
+            {
+                Name = name
+            });
+
             added++;
         }
 
         await _context.SaveChangesAsync();
 
-        TempData["AdminMessage"] = $"Seeda spelarar. Nye: {added}. Totalt frå NIFS: {names.Count}.";
+        TempData["AdminMessage"] =
+            $"Synka spelarar frå NIFS. Nye: {added}. Sletta: {removed}. Trimma: {renamed}. Totalt frå NIFS: {normalizedApiNames.Count}.";
+
         return RedirectToAction(nameof(Index));
     }
-
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddPlayer(string? name)
