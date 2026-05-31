@@ -34,7 +34,7 @@ public class NifsApiService : INifsApiService
 
         return await _cache.GetOrCreateAsync(cacheKey, async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
 
             var tournamentModels = await GetGruppeInfo($"tournaments/{tournamentId}/stages/");
 
@@ -57,7 +57,7 @@ public class NifsApiService : INifsApiService
 
         return await _cache.GetOrCreateAsync(cacheKey, async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
 
             return await GetFromNifsAsync<List<NifsKampModel>>($"stages/{tournamentId}/matches/")
                    ?? new List<NifsKampModel>();
