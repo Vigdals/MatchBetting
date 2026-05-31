@@ -56,7 +56,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<ILogService, LogService>();
-builder.Services.AddScoped<INifsApiService, NifsApiService>();
+builder.Services.AddMemoryCache();
+
+builder.Services.AddHttpClient<INifsApiService, NifsApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.nifs.no/");
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+});
 builder.Services.AddHttpClient<IFootballDataService, FootballDataService>((sp, client) =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();

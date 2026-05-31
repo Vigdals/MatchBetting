@@ -50,32 +50,50 @@ namespace MatchBetting.Controllers
         [Authorize]
         public async Task<IActionResult> Index()
         {
-            var tournamentViewModelList = _nifsApiService.GetTournamentInfo(TournamentId);
             var matchViewModelList = new List<NifsKampViewModel>();
-
-            foreach (var tournamentViewModel in tournamentViewModelList)
-            {
-                var matchModels = await _nifsApiService.GetKampInfo(tournamentViewModel.id);
-
-                foreach (var match in matchModels)
-                {
-                    matchViewModelList.Add(new NifsKampViewModel(match, tournamentViewModel));
-                    AddOrUpdateMatchInDatabase(match);
-                }
-            }
 
             try
             {
+                var tournamentViewModelList = await _nifsApiService.GetTournamentInfo(TournamentId);
+
+                foreach (var tournamentViewModel in tournamentViewModelList)
+                {
+                    var matchModels = await _nifsApiService.GetKampInfo(tournamentViewModel.id);
+
+                    foreach (var match in matchModels)
+                    {
+                        matchViewModelList.Add(new NifsKampViewModel(match, tournamentViewModel));
+                        AddOrUpdateMatchInDatabase(match);
+                    }
+                }
+
                 await _context.SaveChangesAsync();
             }
-            catch (Exception e)
+            catch (NifsApiException ex)
             {
-                Console.WriteLine(e);
+                _logService.LogInfo(
+                    GetCurrentUserId() ?? string.Empty,
+                    $"NIFS-feil ved lasting av Home/Index: {ex.Message}");
+
+                ViewBag.NifsWarning =
+                    "Klarte ikkje hente oppdaterte kampdata frå NIFS akkurat no. Viser sist lagra kampar frå databasen.";
+
+                matchViewModelList = GetMatchesFromDatabaseForIndex();
+            }
+            catch (Exception ex)
+            {
+                _logService.LogInfo(
+                    GetCurrentUserId() ?? string.Empty,
+                    $"Uventa feil ved lasting av Home/Index: {ex.Message}");
+
+                ViewBag.NifsWarning =
+                    "Noko gjekk gale ved henting av kampdata. Viser sist lagra kampar frå databasen dersom dei finst.";
+
+                matchViewModelList = GetMatchesFromDatabaseForIndex();
             }
 
             return View(matchViewModelList);
         }
-
         [Authorize]
         public async Task<IActionResult> LeaderBoard()
         {
@@ -528,6 +546,19 @@ namespace MatchBetting.Controllers
 
         #region Private match helpers
 
+        private List<NifsKampViewModel> GetMatchesFromDatabaseForIndex()
+        {
+            var knockoutStart = new DateTime(2026, 6, 28, 0, 0, 0);
+
+            var matches = _context.Matches
+                .Where(m => m.Timestamp >= TournamentStart)
+                .OrderBy(m => m.Timestamp)
+                .ToList();
+
+            return matches
+                .Select(match => new NifsKampViewModel(match, knockoutStart))
+                .ToList();
+        }
         private List<MatchViewModel> GetMatchesWithinTimeRange()
         {
             var now = GetServerDateTimeNow();
