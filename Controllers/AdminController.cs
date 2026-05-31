@@ -16,7 +16,6 @@ namespace MatchBetting.Controllers;
 public class AdminController : Controller
 {
     private const string TournamentId = "56";
-    private readonly IFootballDataService _footballDataService;
 
     private static readonly HashSet<string> AllowedAdminUserIds = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -29,17 +28,18 @@ public class AdminController : Controller
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly INifsApiService _nifsApiService;
+    private readonly IServiceProvider _serviceProvider;
 
     public AdminController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         INifsApiService nifsApiService,
-        IFootballDataService footballDataService)
+        IServiceProvider serviceProvider)
     {
         _context = context;
         _userManager = userManager;
         _nifsApiService = nifsApiService;
-        _footballDataService = footballDataService;
+        _serviceProvider = serviceProvider;
     }
 
     public override void OnActionExecuting(ActionExecutingContext context)
@@ -98,7 +98,12 @@ public class AdminController : Controller
             MatchBetCount = await _context.MatchBettings.CountAsync(),
             SideBetCount = await _context.SideBettings.CountAsync(),
             PlayerCount = await _context.FootballPlayers.CountAsync(),
-            GroupCount = groups.Count
+            GroupCount = groups.Count,
+
+            SideBetResultToppscorer = sideBetResult?.Toppscorer ?? string.Empty,
+            SideBetResultWinnerTeam = sideBetResult?.WinnerTeam ?? string.Empty,
+            SideBetResultMostCards = sideBetResult?.MostCards ?? string.Empty,
+            SideBetResultUpdatedAtUtc = sideBetResult?.UpdatedAtUtc
         };
 
         return View(model);
@@ -106,13 +111,14 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveSideBetResult(string toppscorer, string winnerTeam, string mostCards)
+    public async Task<IActionResult> SaveSideBetResult(string? toppscorer, string? winnerTeam, string? mostCards)
     {
-        toppscorer = toppscorer.Trim() ?? string.Empty;
-        winnerTeam = winnerTeam.Trim() ?? string.Empty;
-        mostCards = mostCards.Trim() ?? string.Empty;
+        toppscorer = toppscorer?.Trim() ?? string.Empty;
+        winnerTeam = winnerTeam?.Trim() ?? string.Empty;
+        mostCards = mostCards?.Trim() ?? string.Empty;
 
-        var sideBetResult = await _context.SideBetResults.FirstOrDefaultAsync(r => r.TournamentId == TournamentId);
+        var sideBetResult = await _context.SideBetResults
+            .FirstOrDefaultAsync(r => r.TournamentId == TournamentId);
 
         if (sideBetResult == null)
         {
@@ -131,7 +137,7 @@ public class AdminController : Controller
 
         await _context.SaveChangesAsync();
 
-        TempData["AdminMessage"] = "Sidebets er lagra, bro.";
+        TempData["AdminMessage"] = "Sidebets er lagra.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -142,8 +148,22 @@ public class AdminController : Controller
         const string competitionCode = "WC";
         const int season = 2026;
 
-        var topScorers = await _footballDataService
-            .GetTopScorersAsync(competitionCode, season);
+        List<FootballDataTopScorer> topScorers;
+
+        try
+        {
+            var footballDataService = _serviceProvider.GetRequiredService<IFootballDataService>();
+
+            topScorers = await footballDataService
+                .GetTopScorersAsync(competitionCode, season);
+        }
+        catch (Exception ex)
+        {
+            TempData["AdminMessage"] =
+                $"Klarte ikkje hente toppscorar frå Football-Data akkurat no: {ex.Message}";
+
+            return RedirectToAction(nameof(Index));
+        }
 
         if (topScorers.Count == 0)
         {
@@ -224,7 +244,10 @@ public class AdminController : Controller
             .Where(u => u.Email == null || u.Email.Trim() == string.Empty)
             .ToListAsync();
 
-        foreach (var user in users) user.CompetitionGroupCompetitionId = null;
+        foreach (var user in users)
+        {
+            user.CompetitionGroupCompetitionId = null;
+        }
 
         await _context.SaveChangesAsync();
 
@@ -337,7 +360,9 @@ public class AdminController : Controller
             if (oldToppscorer != sideBet.Toppscorer ||
                 oldMostCards != sideBet.MostCards ||
                 oldWinnerTeam != sideBet.WinnerTeam)
+            {
                 changed++;
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -356,10 +381,12 @@ public class AdminController : Controller
         foreach (var name in names
                      .Where(n => !string.IsNullOrWhiteSpace(n))
                      .Select(n => n.Trim())
-                     .Distinct())
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (await _context.FootballPlayers.AnyAsync(p => p.Name == name))
+            {
                 continue;
+            }
 
             _context.FootballPlayers.Add(new FootballPlayers { Name = name });
             added++;
@@ -373,7 +400,7 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddPlayer(string name)
+    public async Task<IActionResult> AddPlayer(string? name)
     {
         name = name?.Trim() ?? string.Empty;
 
