@@ -63,6 +63,7 @@ public class AdminController : Controller
 
         var users = await _context.Users
             .Include(u => u.CompetitionGroup)
+            .Where(u => u.Email != null && u.Email.Trim() != string.Empty)
             .OrderBy(u => u.CompetitionGroupCompetitionId)
             .ThenBy(u => u.FullName)
             .ThenBy(u => u.Email)
@@ -244,10 +245,7 @@ public class AdminController : Controller
             .Where(u => u.Email == null || u.Email.Trim() == string.Empty)
             .ToListAsync();
 
-        foreach (var user in users)
-        {
-            user.CompetitionGroupCompetitionId = null;
-        }
+        foreach (var user in users) user.CompetitionGroupCompetitionId = null;
 
         await _context.SaveChangesAsync();
 
@@ -360,9 +358,7 @@ public class AdminController : Controller
             if (oldToppscorer != sideBet.Toppscorer ||
                 oldMostCards != sideBet.MostCards ||
                 oldWinnerTeam != sideBet.WinnerTeam)
-            {
                 changed++;
-            }
         }
 
         await _context.SaveChangesAsync();
@@ -423,10 +419,7 @@ public class AdminController : Controller
 
         foreach (var name in normalizedApiNames)
         {
-            if (dbNameSet.Contains(name))
-            {
-                continue;
-            }
+            if (dbNameSet.Contains(name)) continue;
 
             _context.FootballPlayers.Add(new FootballPlayers
             {
@@ -443,6 +436,7 @@ public class AdminController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddPlayer(string? name)
