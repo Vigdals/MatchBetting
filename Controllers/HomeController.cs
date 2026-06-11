@@ -634,8 +634,13 @@ namespace MatchBetting.Controllers
             }
         }
 
-        private static string GetResultFullTime(Result matchResult)
+        private static string GetResultFullTime(Result? matchResult)
         {
+            if (matchResult?.homeScore90 == null || matchResult.awayScore90 == null)
+            {
+                return string.Empty;
+            }
+
             if (matchResult.homeScore90 > matchResult.awayScore90)
             {
                 return "H";
