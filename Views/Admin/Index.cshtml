@@ -79,7 +79,7 @@
                             </div>
                         }
                     </div>
-
+                    
                     <form action="@Url.Action("SaveSideBetResult", "Admin")" method="post">
                         @Html.AntiForgeryToken()
 
@@ -114,6 +114,19 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <form action="@Url.Action("SyncMatchesFromNifs", "Admin")" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit"
+                                    class="btn btn-warning"
+                                    onclick="return confirm('Synke ferske kampresultat frå NIFS no?');">
+                                Synk kampar frå NIFS
+                            </button>
+                            
+                            <span class="text-muted small align-self-md-center">
+                                Dette hentar kampar frå NIFS og lagarar dei i basen manuelt.
+                            </span>
+                        </form>
 
                         <div class="mt-3 d-flex flex-column flex-md-row gap-2">
                             <button type="submit"

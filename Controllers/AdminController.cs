@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using MatchBetting.NifsModels;
+using MatchBetting.Utils;
+using Result = MatchBetting.NifsModels.Result;
 
 namespace MatchBetting.Controllers;
 
@@ -16,13 +19,11 @@ namespace MatchBetting.Controllers;
 public class AdminController : Controller
 {
     private const string TournamentId = "56";
+    private static readonly DateTime TournamentStart = new(2026, 6, 11, 21, 0, 0);
 
     private static readonly HashSet<string> AllowedAdminUserIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        "8f477990-e3d8-41e4-b67e-5f3185034ec8",
-        "468d570b-b3f7-4075-8cc4-2681f72a6aec",
-        "5c0062fc-4277-489d-8e4d-b40ed0c91279",
-        "cc12a0c4-a89d-41cd-867f-868cf6f21f21"
+        "8f477990-e3d8-41e4-b67e-5f3185034ec8"
     };
 
     private readonly ApplicationDbContext _context;
@@ -369,6 +370,66 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SyncMatchesFromNifs()
+    {
+        var now = GetServerDateTimeNow();
+
+        var matches = await _context.Matches
+            .Where(m =>
+                m.Timestamp >= TournamentStart &&
+                now >= m.Timestamp.AddHours(-2) &&
+                (
+                    m.MatchStatusId != 1 ||
+                    m.Timestamp >= now.AddDays(-2)
+                ))
+            .OrderBy(m => m.Timestamp)
+            .ToListAsync();
+
+        var updated = 0;
+        var failed = 0;
+        var changed = 0;
+
+        foreach (var dbMatch in matches)
+        {
+            try
+            {
+                var beforeStatusId = dbMatch.MatchStatusId;
+                var beforeHomeScore = dbMatch.HomeScore90;
+                var beforeAwayScore = dbMatch.AwayScore90;
+                var beforeResult = dbMatch.Result;
+
+                var fetchedMatch = await _nifsApiService.FetchMatch(dbMatch.MatchId);
+
+                ApplyNifsMatch(dbMatch, fetchedMatch);
+
+                updated++;
+
+                if (beforeStatusId != dbMatch.MatchStatusId ||
+                    beforeHomeScore != dbMatch.HomeScore90 ||
+                    beforeAwayScore != dbMatch.AwayScore90 ||
+                    beforeResult != dbMatch.Result)
+                {
+                    changed++;
+                }
+            }
+            catch (Exception ex)
+            {
+                failed++;
+
+                Console.WriteLine($"Klarte ikkje synke kamp {dbMatch.MatchId} frå NIFS: {ex.Message}");
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        TempData["AdminMessage"] =
+            $"Synka kampar frå NIFS. Sjekka: {matches.Count}. Oppdatert: {updated}. Endra: {changed}. Feila: {failed}.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> SeedPlayers()
     {
         var apiNames = await _nifsApiService.GetAllPlayersForTournament(TournamentId);
@@ -460,6 +521,46 @@ public class AdminController : Controller
 
         TempData["AdminMessage"] = $"La til {name}.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private static void ApplyNifsMatch(Match dbMatch, NifsKampModel match)
+    {
+        dbMatch.AwayTeam = match.awayTeam.name;
+        dbMatch.HomeTeam = match.homeTeam.name;
+        dbMatch.Timestamp = match.timestamp;
+        dbMatch.HomeScore90 = match.result?.homeScore90;
+        dbMatch.AwayScore90 = match.result?.awayScore90;
+        dbMatch.Result = GetResultFullTime(match.result);
+        dbMatch.MatchStatusId = match.matchStatusId;
+        dbMatch.MatchStatus = Euro2024MatchStatus.GetMatchStatusText(match.matchStatusId);
+        dbMatch.HomeTeamLogoUrl = match.homeTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
+        dbMatch.AwayTeamLogoUrl = match.awayTeam?.logo?.url ?? "~/img/2026_FIFA_World_Cup_emblem.svg";
+    }
+
+    private static string GetResultFullTime(Result? matchResult)
+    {
+        if (matchResult?.homeScore90 == null || matchResult.awayScore90 == null)
+        {
+            return string.Empty;
+        }
+
+        if (matchResult.homeScore90 > matchResult.awayScore90)
+        {
+            return "H";
+        }
+
+        if (matchResult.homeScore90 < matchResult.awayScore90)
+        {
+            return "B";
+        }
+
+        return "U";
+    }
+
+    private static DateTime GetServerDateTimeNow()
+    {
+        var osloTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, osloTimeZone);
     }
 
     private static string DisplayName(ApplicationUser user)

@@ -29,10 +29,7 @@ namespace MatchBetting.Controllers
         // Brukarar som kan sjå sidebets før fristen.
         private static readonly HashSet<string> SideBetAdminUserIds = new(StringComparer.OrdinalIgnoreCase)
         {
-            "8f477990-e3d8-41e4-b67e-5f3185034ec8",
-            "468d570b-b3f7-4075-8cc4-2681f72a6aec",
-            "5c0062fc-4277-489d-8e4d-b40ed0c91279",
-            "cc12a0c4-a89d-41cd-867f-868cf6f21f21"
+            "8f477990-e3d8-41e4-b67e-5f3185034ec8"
         };
 
         public HomeController(
@@ -94,6 +91,7 @@ namespace MatchBetting.Controllers
 
             return View(matchViewModelList);
         }
+
         [Authorize]
         public async Task<IActionResult> LeaderBoard()
         {
@@ -106,26 +104,29 @@ namespace MatchBetting.Controllers
                 return Forbid();
             }
 
-            var currentMatches = GetMatchesWithinTimeRange();
+            var matchesToRefresh = GetMatchesWithinTimeRange();
 
-            foreach (var match in currentMatches)
+            foreach (var match in matchesToRefresh)
             {
-                var fetchedMatch = await _nifsApiService.FetchMatch(match.MatchId);
-                AddOrUpdateMatchInDatabase(fetchedMatch);
+                try
+                {
+                    var fetchedMatch = await _nifsApiService.FetchMatch(match.MatchId);
+                    AddOrUpdateMatchInDatabase(fetchedMatch);
+                }
+                catch (Exception ex)
+                {
+                    _logService.LogInfo(
+                        currentUserId ?? string.Empty,
+                        $"Klarte ikkje oppdatere kamp {match.MatchId} frå NIFS ved leaderboard: {ex.Message}");
+                }
             }
 
+            await _context.SaveChangesAsync();
+
+            var currentMatches = GetMatchesWithinTimeRange();
             var users = GetLeaderboardUsers(groupId.Value, currentMatches);
 
             ViewBag.CurrentMatches = currentMatches;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
 
             return View(users);
         }
@@ -142,12 +143,47 @@ namespace MatchBetting.Controllers
                 return Forbid();
             }
 
+            await RefreshRecentMatchesFromNifs(currentUserId);
+
             var historicalMatches = GetAllMatchesUpToTimeRange();
             var users = GetLeaderboardUsers(groupId.Value, historicalMatches);
 
             ViewBag.CurrentMatches = historicalMatches;
 
             return View(users);
+        }
+
+        private async Task RefreshRecentMatchesFromNifs(string? userId)
+        {
+            var now = GetServerDateTimeNow();
+
+            var matchesToRefresh = _context.Matches
+                .Where(m =>
+                    m.Timestamp >= TournamentStart &&
+                    now >= m.Timestamp.AddHours(-2) &&
+                    (
+                        m.MatchStatusId != 1 ||
+                        m.Timestamp >= now.AddDays(-2)
+                    ))
+                .OrderBy(m => m.Timestamp)
+                .ToList();
+
+            foreach (var match in matchesToRefresh)
+            {
+                try
+                {
+                    var fetchedMatch = await _nifsApiService.FetchMatch(match.MatchId);
+                    AddOrUpdateMatchInDatabase(fetchedMatch);
+                }
+                catch (Exception ex)
+                {
+                    _logService.LogInfo(
+                        userId ?? string.Empty,
+                        $"Klarte ikkje oppdatere kamp {match.MatchId} frå NIFS: {ex.Message}");
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         [Authorize]
@@ -634,8 +670,13 @@ namespace MatchBetting.Controllers
             }
         }
 
-        private static string GetResultFullTime(Result matchResult)
+        private static string GetResultFullTime(Result? matchResult)
         {
+            if (matchResult?.homeScore90 == null || matchResult.awayScore90 == null)
+            {
+                return string.Empty;
+            }
+
             if (matchResult.homeScore90 > matchResult.awayScore90)
             {
                 return "H";

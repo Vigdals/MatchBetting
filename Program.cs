@@ -27,8 +27,6 @@ else
                        ?? throw new InvalidOperationException("Key Vault secret 'db-connection-matchBetting' not found.");
 }
 
-
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
