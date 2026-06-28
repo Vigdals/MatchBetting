@@ -1,5 +1,5 @@
-﻿DECLARE @UserId nvarchar(450) = '599bd29d-bc18-4361-9beb-6d2372894950';
-DECLARE @MatchId int = 2536564;
+﻿DECLARE @UserId nvarchar(450) = '0c27a739-5b93-40c7-8012-e4cab39e641e';
+DECLARE @MatchId int = 2536574;
 DECLARE @Result nvarchar(max) = 'U';
 
 IF EXISTS (

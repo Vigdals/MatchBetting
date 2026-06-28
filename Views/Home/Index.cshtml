@@ -151,13 +151,13 @@
         </div>
     </div>
 
-    <!-- MATCHES -->
+     <!-- MATCHES -->
     <div class="row justify-content-center mt-3">
         <div class="col-12 col-lg-10">
 
             @if (Model != null)
             {
-                <!-- GROUP STAGE -->
+                @*                <!-- GROUP STAGE -->
                 @foreach (var round in groupMatches.Select(m => m.round).Distinct().OrderBy(r => r))
                 {
                     <h3 class="mt-4">Runde @round</h3>
@@ -222,7 +222,7 @@
                         </tbody>
                     </table>
                 }
-
+ *@
                 <!-- KNOCKOUT -->
                 @if (knockoutMatches.Any())
                 {
