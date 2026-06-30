@@ -652,13 +652,15 @@ public class HomeController : Controller
     private List<MatchViewModel> GetMatchesWithinTimeRange()
     {
         var now = GetServerDateTimeNow();
+        var from = now.AddHours(-24);
 
         var matches = _context.Matches
             .Where(m =>
                 m.Timestamp >= TournamentStart &&
-                now >= m.Timestamp.AddHours(-2) &&
-                now <= m.Timestamp.Date.AddDays(1))
-            .OrderBy(o => o.Timestamp)
+                m.Timestamp >= from &&
+                now >= m.Timestamp.AddHours(-2))
+            .OrderByDescending(m => m.Timestamp)
+            .ThenByDescending(m => m.MatchId)
             .ToList();
 
         return matches.Select(m => new MatchViewModel(m)).ToList();
