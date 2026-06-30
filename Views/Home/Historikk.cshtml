@@ -4,6 +4,10 @@
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
     var currentMatches = ViewBag.CurrentMatches as List<MatchViewModel> ?? new List<MatchViewModel>();
+    var orderedMatches = currentMatches
+        .OrderByDescending(m => m.Timestamp)
+        .ThenByDescending(m => m.MatchId)
+        .ToList();
 }
 
 <div class="container py-4">
@@ -32,7 +36,7 @@
                     Det finst ingen deltakarar enno.
                 </div>
             }
-            else if (!currentMatches.Any())
+            else if (!orderedMatches.Any())
             {
                 <div class="alert alert-info">
                     Ingen VM 2026-kampar er ferdigspelte enno.
@@ -47,7 +51,7 @@
                                 <th>Deltakar</th>
                                 <th class="text-center">P</th>
 
-                                @foreach (var match in currentMatches)
+                                @foreach (var match in orderedMatches)
                                 {
                                     <th title="@match.MatchId" class="text-center small">
                                         <div>
@@ -81,7 +85,7 @@
                                     <td class="fw-bold">@user.UserName</td>
                                     <td class="fw-bold text-center">@user.Score</td>
 
-                                    @foreach (var match in currentMatches)
+                                    @foreach (var match in orderedMatches)
                                     {
                                         var betting = user.CurrentBettings.FirstOrDefault(b => b.MatchId == match.MatchId);
 
